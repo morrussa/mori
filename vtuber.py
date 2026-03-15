@@ -114,6 +114,7 @@ def parse_args() -> argparse.Namespace:
 
     parser.add_argument("--bilibili-room-id", type=int, default=0, help="Enable bilibili live mode by room id (0 = disabled).")
     parser.add_argument("--bilibili-room-url", default="", help="Optional bilibili live URL to extract room id.")
+    parser.add_argument("--bilibili-catchup", type=int, default=0, help="Process last N recent danmaku on startup (0 = wait for new).")
     parser.add_argument("--bilibili-interval", type=float, default=2.0, help="Polling interval seconds for bilibili mode.")
     parser.add_argument("--bilibili-exit-when-offline", action="store_true", help="Exit when the live room goes offline.")
     parser.add_argument("--bilibili-live-check-interval", type=float, default=15.0, help="Live status check interval seconds.")
@@ -253,6 +254,30 @@ def main() -> int:
         interval_s = float(args.bilibili_interval)
         poller = BilibiliLivePoller(room_id=room_id)
 
+        catchup_n = int(args.bilibili_catchup or 0)
+        if catchup_n < 0:
+            catchup_n = 0
+        if catchup_n > 10:
+            catchup_n = 10
+
+        try:
+            info = get_room_info(room_id=room_id)
+            print(f"bili> title={info.title} online={info.online} live_status={info.live_status}")
+        except Exception as e:
+            print(f"bili> room info error: {e}")
+
+        try:
+            current = poller.fetch()
+            print(f"bili> current_messages={len(current)} catchup={catchup_n}")
+            if catchup_n > 0 and current:
+                ordered = sorted(current, key=lambda m: (float(m.ts or 0.0), str(m.timeline), str(m.nickname), str(m.text)))
+                for msg in ordered[-catchup_n:]:
+                    user_input = f"[接收到了直播间的弹幕] {msg.nickname}给你发送了一个消息: {msg.text}"
+                    print(f"你(bili-catchup)> {msg.nickname}: {msg.text}")
+                    _run_one_turn(user_input=user_input, source="bilibili", nickname=msg.nickname)
+        except Exception as e:
+            print(f"bili> fetch error: {e}")
+
         q: queue.Queue[DanmakuMessage] = queue.Queue(maxsize=512)
         stop = threading.Event()
         exit_requested = threading.Event()
@@ -302,12 +327,16 @@ def main() -> int:
             f"bili> room_id={room_id} interval={interval_s}s exit_when_offline={bool(args.bilibili_exit_when_offline)} (Ctrl+C 退出)"
         )
         try:
+            last_notice = 0.0
             while True:
                 if exit_requested.is_set():
                     break
                 try:
                     msg = q.get(timeout=0.2)
                 except queue.Empty:
+                    if time.time() - last_notice >= 30.0:
+                        print("bili> waiting for new danmaku...")
+                        last_notice = time.time()
                     continue
                 user_input = f"[接收到了直播间的弹幕] {msg.nickname}给你发送了一个消息: {msg.text}"
                 print(f"你(bili)> {msg.nickname}: {msg.text}")

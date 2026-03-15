@@ -19,5 +19,6 @@ readme.txt
 simu/
 workspace/
 logs/
+live/
 .codebuddy/
 langgraph-main(example)/

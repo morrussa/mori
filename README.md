@@ -76,6 +76,8 @@ python3 vtuber.py --tts --live-dir live
 python3 vtuber.py --bilibili-room-url 'https://live.bilibili.com/<room_id>' --bilibili-interval 2 --tts --bilibili-exit-when-offline
 ```
 
+默认只处理“启动后”的新弹幕；想立即验证链路可加：`--bilibili-catchup 1`。
+
 ### Inochi2D（官方前端）
 
 安装 Inochi Session + 下载开源示例模型（Aka/Midori）：
