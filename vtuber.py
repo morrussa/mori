@@ -16,7 +16,7 @@ from mori_llm.llama_cpp_cli import (
 )
 from mori_llm.pipeline import MoriPipeline
 from mori_memory.bridge import MoriMemoryBridge
-from mori_tts.qwen3_tts import QWEN3_TTS_DEFAULT_MODEL, synthesize as qwen3_tts_synthesize
+from mori_tts.qwen3_tts import QWEN3_TTS_DEFAULT_MODEL, is_cuda_runtime, synthesize as qwen3_tts_synthesize
 
 
 def _blocks_to_messages(blocks: object) -> list[dict[str, str]]:
@@ -102,6 +102,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--system", default=_default_system_prompt(), help="Base system prompt.")
 
     parser.add_argument("--tts", action="store_true", help="Enable TTS (qwen3_tts_rs).")
+    parser.add_argument(
+        "--tts-cuda",
+        action="store_true",
+        help="Require CUDA runtime build for TTS (fail if CPU build).",
+    )
     parser.add_argument("--tts-root", default=str(tts_root), help="qwen3_tts_rs install dir (contains tts + models/).")
     parser.add_argument("--tts-model", default=QWEN3_TTS_DEFAULT_MODEL, help="Model dir name under <tts-root>/models/.")
     parser.add_argument("--tts-speaker", default="Vivian", help="Speaker name (CustomVoice model).")
@@ -184,6 +189,13 @@ def main() -> int:
         system_prompt = _enhance_system_prompt_for_bilibili(system_prompt)
 
     tts_enabled = bool(args.tts)
+    tts_require_cuda = bool(args.tts_cuda)
+    if tts_enabled:
+        try:
+            runtime = "cuda" if is_cuda_runtime(args.tts_root) else "cpu"
+            print(f"tts> runtime={runtime} root={Path(args.tts_root).expanduser().resolve()}")
+        except Exception as e:
+            print(f"tts> runtime check failed: {e}")
     turn = 1
 
     def _run_one_turn(*, user_input: str, source: str = "stdin", nickname: str = "") -> None:
@@ -222,6 +234,7 @@ def main() -> int:
                     speaker=args.tts_speaker,
                     language=args.tts_language,
                     instruction=str(args.tts_instruction or "").strip() or None,
+                    require_cuda=tts_require_cuda,
                 )
                 print(f"tts> {wav_path}")
             except Exception as e:

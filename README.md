@@ -35,6 +35,13 @@ TTS 的运行时与模型默认安装到 `model/tts/qwen3_tts_rs/`（同样不�
 python3 mori_tts/install_qwen3_tts_rs.py --root model/tts/qwen3_tts_rs
 ```
 
+默认会自动检测 NVIDIA GPU：有则下载 CUDA runtime，没有则下载 CPU runtime；也可以强制：
+
+```bash
+python3 mori_tts/install_qwen3_tts_rs.py --cuda --root model/tts/qwen3_tts_rs
+python3 mori_tts/install_qwen3_tts_rs.py --cpu  --root model/tts/qwen3_tts_rs
+```
+
 ## 运行
 
 默认会从 `model/` 里挑一个 chat 和 embedding 模型；也可以显式指定：
@@ -51,6 +58,12 @@ python3 main.py \
 python3 main.py --tts
 ```
 
+强制要求 CUDA runtime（如果装的是 CPU runtime 会直接报错提示重装）：
+
+```bash
+python3 main.py --tts --tts-cuda
+```
+
 如果你的 llama.cpp 不在默认路径，设置其中之一：
 
 - `LLAMA_CPP_BIN_DIR=/path/to/llama-cpp/build/bin`
@@ -62,6 +75,12 @@ python3 main.py --tts
 
 ```bash
 python3 vtuber.py --tts --live-dir live
+```
+
+如果你希望确认 TTS 确实在用 GPU（CUDA runtime），加上：
+
+```bash
+python3 vtuber.py --tts --tts-cuda --live-dir live
 ```
 
 它会持续写入：
