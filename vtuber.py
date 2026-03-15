@@ -4,6 +4,7 @@ import argparse
 import json
 import os
 import random
+import re
 import time
 from pathlib import Path
 
@@ -70,6 +71,18 @@ def _enhance_system_prompt_for_bilibili(system_prompt: str) -> str:
     )
 
 
+def _parse_bilibili_room_id(value: str) -> int:
+    s = str(value or "").strip()
+    if not s:
+        return 0
+    if s.isdigit():
+        return int(s)
+    m = re.search(r"live\\.bilibili\\.com/(\\d+)", s)
+    if m:
+        return int(m.group(1))
+    return 0
+
+
 def parse_args() -> argparse.Namespace:
     repo_root = Path(__file__).resolve().parent
     model_dir = repo_root / "model"
@@ -100,7 +113,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--event-log", default="events.jsonl", help="JSONL event log under --live-dir.")
 
     parser.add_argument("--bilibili-room-id", type=int, default=0, help="Enable bilibili live mode by room id (0 = disabled).")
+    parser.add_argument("--bilibili-room-url", default="", help="Optional bilibili live URL to extract room id.")
     parser.add_argument("--bilibili-interval", type=float, default=2.0, help="Polling interval seconds for bilibili mode.")
+    parser.add_argument("--bilibili-exit-when-offline", action="store_true", help="Exit when the live room goes offline.")
+    parser.add_argument("--bilibili-live-check-interval", type=float, default=15.0, help="Live status check interval seconds.")
 
     args = parser.parse_args()
 
@@ -109,6 +125,9 @@ def parse_args() -> argparse.Namespace:
 
     args.chat_model = str(Path(args.chat_model).expanduser()) if args.chat_model else str(pick_default_chat_model(model_dir))
     args.embed_model = str(Path(args.embed_model).expanduser()) if args.embed_model else str(pick_default_embed_model(model_dir))
+
+    if int(args.bilibili_room_id or 0) <= 0 and str(args.bilibili_room_url or "").strip():
+        args.bilibili_room_id = _parse_bilibili_room_id(str(args.bilibili_room_url))
 
     args.llama_bin_dir = str(resolve_llama_cpp_bin_dir(args.llama_bin_dir))
     return args
@@ -228,6 +247,7 @@ def main() -> int:
         import threading
 
         from mori_live_stream.bilibili_live import BilibiliLivePoller, DanmakuMessage
+        from mori_live_stream.bilibili_room import get_room_info
 
         room_id = int(args.bilibili_room_id)
         interval_s = float(args.bilibili_interval)
@@ -235,6 +255,7 @@ def main() -> int:
 
         q: queue.Queue[DanmakuMessage] = queue.Queue(maxsize=512)
         stop = threading.Event()
+        exit_requested = threading.Event()
 
         def _poll_loop() -> None:
             while not stop.is_set():
@@ -258,9 +279,32 @@ def main() -> int:
         t = threading.Thread(target=_poll_loop, name="bilibili-poll", daemon=True)
         t.start()
 
-        print(f"bili> room_id={room_id} interval={interval_s}s (Ctrl+C 退出)")
+        def _live_monitor() -> None:
+            check_interval_s = float(args.bilibili_live_check_interval)
+            while not stop.is_set() and not exit_requested.is_set():
+                try:
+                    info = get_room_info(room_id=room_id)
+                    if int(info.live_status) != 1:
+                        print(f"bili> 房间已下播（live_status={info.live_status}），准备退出。")
+                        exit_requested.set()
+                        stop.set()
+                        return
+                except Exception as e:
+                    print(f"bili> live check error: {e}")
+                stop.wait(check_interval_s)
+
+        monitor_thread: threading.Thread | None = None
+        if bool(args.bilibili_exit_when_offline):
+            monitor_thread = threading.Thread(target=_live_monitor, name="bilibili-live-monitor", daemon=True)
+            monitor_thread.start()
+
+        print(
+            f"bili> room_id={room_id} interval={interval_s}s exit_when_offline={bool(args.bilibili_exit_when_offline)} (Ctrl+C 退出)"
+        )
         try:
             while True:
+                if exit_requested.is_set():
+                    break
                 try:
                     msg = q.get(timeout=0.2)
                 except queue.Empty:
@@ -272,6 +316,8 @@ def main() -> int:
             print()
             stop.set()
             t.join(timeout=2)
+            if monitor_thread:
+                monitor_thread.join(timeout=2)
     else:
         while True:
             try:
