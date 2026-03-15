@@ -73,7 +73,7 @@ python3 vtuber.py --tts --live-dir live
 ### Bilibili 弹幕（参考 my-neuro）
 
 ```bash
-python3 vtuber.py --bilibili-room-id <room_id> --bilibili-interval 2 --tts
+python3 vtuber.py --bilibili-room-url 'https://live.bilibili.com/<room_id>' --bilibili-interval 2 --tts --bilibili-exit-when-offline
 ```
 
 ### Inochi2D（官方前端）
