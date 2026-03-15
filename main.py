@@ -13,6 +13,7 @@ from mori_llm.llama_cpp_cli import (
 )
 from mori_llm.pipeline import MoriPipeline
 from mori_memory.bridge import MoriMemoryBridge
+from mori_tts.qwen3_tts import QWEN3_TTS_DEFAULT_MODEL, synthesize as qwen3_tts_synthesize
 
 
 def _blocks_to_messages(blocks: object) -> list[dict[str, str]]:
@@ -54,6 +55,7 @@ def _default_system_prompt() -> str:
 def parse_args() -> argparse.Namespace:
     repo_root = Path(__file__).resolve().parent
     model_dir = repo_root / "model"
+    tts_root = model_dir / "tts" / "qwen3_tts_rs"
 
     parser = argparse.ArgumentParser(prog="mori", description="Mori entrypoint (memory + llama.cpp).")
     parser.add_argument("--workdir", default=str(repo_root), help="Working directory (stores memory/ by default).")
@@ -69,6 +71,18 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--temp", type=float, default=0.7, help="llama-cli --temp.")
     parser.add_argument("--top-p", type=float, default=0.9, help="llama-cli --top-p.")
     parser.add_argument("--system", default=_default_system_prompt(), help="Base system prompt.")
+
+    parser.add_argument("--tts", action="store_true", help="Enable TTS (qwen3_tts_rs).")
+    parser.add_argument("--tts-root", default=str(tts_root), help="qwen3_tts_rs install dir (contains tts + models/).")
+    parser.add_argument("--tts-model", default=QWEN3_TTS_DEFAULT_MODEL, help="Model dir name under <tts-root>/models/.")
+    parser.add_argument("--tts-speaker", default="Vivian", help="Speaker name (CustomVoice model).")
+    parser.add_argument("--tts-language", default="chinese", help="Language name (e.g. chinese/english).")
+    parser.add_argument("--tts-instruction", default="", help="Optional voice instruction (1.7B CustomVoice).")
+    parser.add_argument(
+        "--tts-out-dir",
+        default="tts_out",
+        help="Output directory for wav files (relative to --workdir unless absolute).",
+    )
 
     args = parser.parse_args()
 
@@ -90,6 +104,11 @@ def main() -> int:
     os.chdir(workdir)
     (workdir / "memory").mkdir(parents=True, exist_ok=True)
     (workdir / "memory" / "v4" / "topic_graph").mkdir(parents=True, exist_ok=True)
+    tts_out_dir = Path(args.tts_out_dir).expanduser()
+    if not tts_out_dir.is_absolute():
+        tts_out_dir = workdir / tts_out_dir
+    tts_out_dir = tts_out_dir.resolve()
+    tts_out_dir.mkdir(parents=True, exist_ok=True)
 
     repo_root = Path(__file__).resolve().parent
     model_path = Path(args.chat_model).resolve()
@@ -108,7 +127,9 @@ def main() -> int:
     memory = MoriMemoryBridge(lua_root=repo_root / "mori_memory", py_pipeline=pipeline)
 
     print("Mori 已启动。输入 /exit 退出。")
+    print("命令：/tts on|off|toggle  切换语音输出。")
 
+    tts_enabled = bool(args.tts)
     turn = 1
     while True:
         try:
@@ -118,6 +139,23 @@ def main() -> int:
             break
 
         if not user_input:
+            continue
+        if user_input.startswith("/tts"):
+            parts = user_input.split()
+            if len(parts) == 1:
+                print(f"tts> {'on' if tts_enabled else 'off'}")
+                continue
+            cmd = parts[1].lower()
+            if cmd in {"on", "1", "true"}:
+                tts_enabled = True
+            elif cmd in {"off", "0", "false"}:
+                tts_enabled = False
+            elif cmd in {"toggle", "t"}:
+                tts_enabled = not tts_enabled
+            else:
+                print("tts> 用法：/tts on|off|toggle")
+                continue
+            print(f"tts> {'on' if tts_enabled else 'off'}")
             continue
         if user_input in {"/exit", "/quit"}:
             break
@@ -140,6 +178,21 @@ def main() -> int:
         print(f"mori> {assistant}")
 
         memory.ingest_turn({"turn": turn, "user_input": user_input, "assistant_text": assistant})
+        if tts_enabled:
+            wav_path = tts_out_dir / f"turn_{turn:04d}.wav"
+            try:
+                qwen3_tts_synthesize(
+                    text=assistant,
+                    out_wav_path=wav_path,
+                    tts_root=args.tts_root,
+                    model=args.tts_model,
+                    speaker=args.tts_speaker,
+                    language=args.tts_language,
+                    instruction=str(args.tts_instruction or "").strip() or None,
+                )
+                print(f"tts> {wav_path}")
+            except Exception as e:
+                print(f"tts> 失败：{e}")
         turn += 1
 
     memory.shutdown()

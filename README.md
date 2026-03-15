@@ -27,6 +27,14 @@ pip install -r requirements.txt
 
 把 chat / embedding 两个 `.gguf` 放到 `model/`（目录已在 `.gitignore` 里）。
 
+## 安装 TTS（qwen3_tts_rs）
+
+TTS 的运行时与模型默认安装到 `model/tts/qwen3_tts_rs/`（同样不进 git）：
+
+```bash
+python3 mori_tts/install_qwen3_tts_rs.py --root model/tts/qwen3_tts_rs
+```
+
 ## 运行
 
 默认会从 `model/` 里挑一个 chat 和 embedding 模型；也可以显式指定：
@@ -37,8 +45,13 @@ python3 main.py \
   --embed-model model/<embed>.gguf
 ```
 
+开启语音输出：
+
+```bash
+python3 main.py --tts
+```
+
 如果你的 llama.cpp 不在默认路径，设置其中之一：
 
 - `LLAMA_CPP_BIN_DIR=/path/to/llama-cpp/build/bin`
 - `LLAMA_CPP_DIR=/path/to/llama-cpp`（会自动解析到 build/bin）
-
