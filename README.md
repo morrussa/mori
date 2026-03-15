@@ -99,10 +99,10 @@ python3 vtuber.py --bilibili-room-url 'https://live.bilibili.com/<room_id>' --bi
 
 ### Inochi2D（Love2D 前端，WIP）
 
-启动 Love2D 前端（`inochi2d-c` 渲染 `.inx` + 轮询字幕/音频驱动嘴形，仍是 WIP）：
+启动 Love2D 前端（Inox2D 渲染 `.inx/.inp` + 轮询字幕/音频驱动嘴形，仍是 WIP）：
 
 ```bash
-python3 -m mori_live2d.cli build-inochi2d-c
+python3 -m mori_live2d.cli build-inox2d
 love mori_live2d/love2d_frontend
 ```
 
