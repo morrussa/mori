@@ -1,0 +1,3 @@
+[submodule "mori_memory"]
+	path = mori_memory
+	url = https://github.com/morrussa/mori_memory.git
