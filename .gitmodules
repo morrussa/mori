@@ -1,3 +1,12 @@
 [submodule "mori_memory"]
 	path = mori_memory
 	url = https://github.com/morrussa/mori_memory.git
+[submodule "mori_llm"]
+	path = mori_llm
+	url = https://github.com/morrussa/mori_llm.git
+[submodule "mori_tts"]
+	path = mori_tts
+	url = https://github.com/morrussa/mori_tts.git
+[submodule "mori_live2d"]
+	path = mori_live2d
+	url = https://github.com/morrussa/mori_live2d.git
