@@ -97,13 +97,12 @@ python3 vtuber.py --bilibili-room-url 'https://live.bilibili.com/<room_id>' --bi
 
 默认只处理“启动后”的新弹幕；想立即验证链路可加：`--bilibili-catchup 1`。
 
-### Inochi2D（官方前端）
+### Inochi2D（Love2D 前端，WIP）
 
-安装 Inochi Session + 下载开源示例模型（Aka/Midori）：
+启动 Love2D 前端（当前是占位：随机扭动 + 读字幕；真实 Inochi2D 绑定待做）：
 
 ```bash
-python3 -m mori_live2d.cli install-session
-python3 -m mori_live2d.cli install-models --models aka
+love mori_live2d/love2d_frontend
 ```
 
 更多说明见 `mori_live2d/README.md`。
