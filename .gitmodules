@@ -10,3 +10,6 @@
 [submodule "mori_live2d"]
 	path = mori_live2d
 	url = https://github.com/morrussa/mori_live2d.git
+[submodule "mori_live_stream"]
+	path = mori_live_stream
+	url = https://github.com/morrussa/mori_live_stream.git
