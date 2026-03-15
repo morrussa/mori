@@ -55,3 +55,34 @@ python3 main.py --tts
 
 - `LLAMA_CPP_BIN_DIR=/path/to/llama-cpp/build/bin`
 - `LLAMA_CPP_DIR=/path/to/llama-cpp`（会自动解析到 build/bin）
+
+## 最基础 AI VTuber（字幕 + 可选 TTS）
+
+入口：`vtuber.py`
+
+```bash
+python3 vtuber.py --tts --live-dir live
+```
+
+它会持续写入：
+
+- `live/subtitle.txt`（OBS 文本源可直接“从文件读取”）
+- `live/events.jsonl`
+- `live/audio/turn_XXXX.wav`（启用 `--tts` 时）
+
+### Bilibili 弹幕（参考 my-neuro）
+
+```bash
+python3 vtuber.py --bilibili-room-id <room_id> --bilibili-interval 2 --tts
+```
+
+### Inochi2D（官方前端）
+
+安装 Inochi Session + 下载开源示例模型（Aka/Midori）：
+
+```bash
+python3 -m mori_live2d.cli install-session
+python3 -m mori_live2d.cli install-models --models aka
+```
+
+更多说明见 `mori_live2d/README.md`。
