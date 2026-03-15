@@ -77,7 +77,7 @@ def _parse_bilibili_room_id(value: str) -> int:
         return 0
     if s.isdigit():
         return int(s)
-    m = re.search(r"live\\.bilibili\\.com/(\\d+)", s)
+    m = re.search(r"live\.bilibili\.com/(\d+)", s)
     if m:
         return int(m.group(1))
     return 0
@@ -133,7 +133,13 @@ def parse_args() -> argparse.Namespace:
     args.embed_model = str(Path(args.embed_model).expanduser()) if args.embed_model else str(pick_default_embed_model(model_dir))
 
     if int(args.bilibili_room_id or 0) <= 0 and str(args.bilibili_room_url or "").strip():
-        args.bilibili_room_id = _parse_bilibili_room_id(str(args.bilibili_room_url))
+        parsed = _parse_bilibili_room_id(str(args.bilibili_room_url))
+        if int(parsed) <= 0:
+            raise ValueError(
+                f"Cannot parse bilibili room id from url: {args.bilibili_room_url!r}. "
+                "Pass --bilibili-room-id <id> or use a URL like https://live.bilibili.com/<id>"
+            )
+        args.bilibili_room_id = int(parsed)
 
     args.llama_bin_dir = str(resolve_llama_cpp_bin_dir(args.llama_bin_dir))
     return args
