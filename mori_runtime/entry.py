@@ -348,6 +348,21 @@ def _start_bilibili_thread(
     from mori_live_stream.bilibili_live import BilibiliLivePoller
     from mori_live_stream.bilibili_room import get_room_info
 
+    def _extract_user_id(raw: dict[str, Any] | None) -> str:
+        if not isinstance(raw, dict):
+            return ""
+        for key in ("uid", "user_id", "uid_str", "userid", "userId", "userID"):
+            try:
+                value = raw.get(key)
+            except Exception:
+                value = None
+            if value is None:
+                continue
+            s = str(value).strip()
+            if s:
+                return s
+        return ""
+
     def _loop() -> None:
         poller = BilibiliLivePoller(room_id=int(room_id))
         # optional catchup: fetch current and enqueue last N
@@ -364,11 +379,15 @@ def _start_bilibili_thread(
                     key=lambda m: (float(m.ts or 0.0), str(m.timeline), str(m.nickname), str(m.text)),
                 )
                 for msg in ordered[-cn:]:
+                    user_id = _extract_user_id(getattr(msg, "raw", None))
                     inbox.put(
                         {
                             "source": "bilibili",
                             "text": msg.text,
                             "nickname": msg.nickname,
+                            "user_id": user_id,
+                            "room_id": int(room_id),
+                            "timeline": msg.timeline,
                             "priority": int(priority),
                             "enqueued_at": time.time(),
                         }
@@ -397,11 +416,15 @@ def _start_bilibili_thread(
 
             try:
                 for msg in poller.poll_new():
+                    user_id = _extract_user_id(getattr(msg, "raw", None))
                     inbox.put(
                         {
                             "source": "bilibili",
                             "text": msg.text,
                             "nickname": msg.nickname,
+                            "user_id": user_id,
+                            "room_id": int(room_id),
+                            "timeline": msg.timeline,
                             "priority": int(priority),
                             "enqueued_at": time.time(),
                         }

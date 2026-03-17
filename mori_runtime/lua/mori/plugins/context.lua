@@ -37,6 +37,12 @@ function M.setup(bus, ctx)
         local memory_meta = {
             turn = turn,
             user_input = user_input,
+            raw_user_input = payload.raw_user_input,
+            source = payload.source,
+            nickname = payload.nickname,
+            user_id = payload.user_id,
+            room_id = payload.room_id,
+            timeline = payload.timeline,
         }
         if payload.max_selected_turns ~= nil then
             memory_meta.max_selected_turns = tonumber(payload.max_selected_turns) or payload.max_selected_turns
@@ -70,4 +76,3 @@ function M.setup(bus, ctx)
 end
 
 return M
-
