@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Live2D frontend (optional)
+# love mori_live2d/love2d_frontend
+
+# Run vtuber (TTS enabled)
+python3 vtuber.py --tts

@@ -34,19 +34,20 @@ pip install -r requirements.txt
 
 把 chat / embedding 两个 `.gguf` 放到 `model/`（目录已在 `.gitignore` 里）。
 
-## 安装 TTS（qwen3_tts_rs）
+## 安装 TTS（cosyvoice3）
 
-TTS 的运行时与模型默认安装到 `model/tts/qwen3_tts_rs/`（同样不进 git）：
+TTS 的模型默认安装到 `model/tts/cosyvoice3/`（同样不进 git），并会构建 LuaJIT FFI 用的 native 模块：
 
 ```bash
-python3 mori_tts/install_qwen3_tts_rs.py --root model/tts/qwen3_tts_rs
+bash mori_tts/scripts/install_cosyvoice3.sh --root model/tts/cosyvoice3
 ```
 
-默认会自动检测 NVIDIA GPU：有则下载 CUDA runtime，没有则下载 CPU runtime；也可以强制：
+如果编译报错提示缺少 `protoc`，安装 `protobuf-compiler`（或自行提供 `protoc`）。
+
+如果你想启用 CUDA（需要本机有 CUDA 工具链/驱动），先用 `--cuda` 构建：
 
 ```bash
-python3 mori_tts/install_qwen3_tts_rs.py --cuda --root model/tts/qwen3_tts_rs
-python3 mori_tts/install_qwen3_tts_rs.py --cpu  --root model/tts/qwen3_tts_rs
+bash mori_tts/scripts/install_cosyvoice3.sh --cuda --root model/tts/cosyvoice3
 ```
 
 ## 运行
@@ -62,13 +63,21 @@ python3 main.py \
 开启语音输出：
 
 ```bash
-python3 main.py --tts
+python3 main.py --tts \
+  --tts-root model/tts/cosyvoice3 \
+  --tts-model CosyVoice3-0.5B-Candle \
+  --tts-prompt-wav /path/to/prompt.wav \
+  --tts-prompt-transcript "（这里填 prompt.wav 的文字稿）"
 ```
 
-强制要求 CUDA runtime（如果装的是 CPU runtime 会直接报错提示重装）：
+使用 CUDA（前提：编译时启用了 `--cuda`）：
 
 ```bash
-python3 main.py --tts --tts-cuda
+python3 main.py --tts --tts-device cuda --tts-f16 \
+  --tts-root model/tts/cosyvoice3 \
+  --tts-model CosyVoice3-0.5B-Candle \
+  --tts-prompt-wav /path/to/prompt.wav \
+  --tts-prompt-transcript "（这里填 prompt.wav 的文字稿）"
 ```
 
 如果你的 llama.cpp 不在默认路径，设置其中之一：
@@ -81,13 +90,21 @@ python3 main.py --tts --tts-cuda
 入口：`vtuber.py`
 
 ```bash
-python3 vtuber.py --tts --live-dir live
+python3 vtuber.py --tts --live-dir live \
+  --tts-root model/tts/cosyvoice3 \
+  --tts-model CosyVoice3-0.5B-Candle \
+  --tts-prompt-wav /path/to/prompt.wav \
+  --tts-prompt-transcript "（这里填 prompt.wav 的文字稿）"
 ```
 
-如果你希望确认 TTS 确实在用 GPU（CUDA runtime），加上：
+如果你希望确认 TTS 确实在用 GPU，加上：
 
 ```bash
-python3 vtuber.py --tts --tts-cuda --live-dir live
+python3 vtuber.py --tts --tts-device cuda --tts-f16 --live-dir live \
+  --tts-root model/tts/cosyvoice3 \
+  --tts-model CosyVoice3-0.5B-Candle \
+  --tts-prompt-wav /path/to/prompt.wav \
+  --tts-prompt-transcript "（这里填 prompt.wav 的文字稿）"
 ```
 
 它会持续写入：

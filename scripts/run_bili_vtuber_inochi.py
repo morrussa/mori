@@ -85,8 +85,21 @@ def parse_args() -> argparse.Namespace:
     )
 
     p.add_argument("--tts", action="store_true", help="Enable TTS (vtuber.py --tts).")
-    p.add_argument("--tts-cuda", action="store_true", help="Require CUDA TTS runtime (vtuber.py --tts-cuda).")
     p.add_argument("--tts-root", default="", help="Optional override for vtuber.py --tts-root.")
+    p.add_argument("--tts-model", default="", help="Optional override for vtuber.py --tts-model.")
+    p.add_argument(
+        "--tts-mode",
+        choices=["zero_shot", "cross_lingual", "instruct"],
+        default="zero_shot",
+        help="Passed to vtuber.py --tts-mode.",
+    )
+    p.add_argument("--tts-device", choices=["auto", "cpu", "cuda", "metal"], default="auto", help="Passed to vtuber.py --tts-device.")
+    p.add_argument("--tts-f16", action="store_true", help="Passed to vtuber.py --tts-f16.")
+    p.add_argument("--tts-n-timesteps", type=int, default=0, help="Optional override for vtuber.py --tts-n-timesteps.")
+    p.add_argument("--tts-prompt-wav", default="", help="Passed to vtuber.py --tts-prompt-wav (required when --tts).")
+    p.add_argument("--tts-prompt-text", default="", help="Passed to vtuber.py --tts-prompt-text.")
+    p.add_argument("--tts-prompt-transcript", default="", help="Passed to vtuber.py --tts-prompt-transcript.")
+    p.add_argument("--tts-instruct-text", default="", help="Passed to vtuber.py --tts-instruct-text.")
 
     p.add_argument("--inochi-root", default=str(_default_inochi_root(repo_root)), help="Root for model/inochi2d.")
     p.add_argument("--inochi-bin", default="", help="Path to inochi-session executable (auto-detect if empty).")
@@ -149,10 +162,28 @@ def main() -> int:
             vtuber_cmd.append("--bilibili-exit-when-offline")
         if bool(args.tts):
             vtuber_cmd.append("--tts")
-        if bool(args.tts_cuda):
-            vtuber_cmd.append("--tts-cuda")
         if str(args.tts_root or "").strip():
             vtuber_cmd += ["--tts-root", str(args.tts_root)]
+        if str(args.tts_model or "").strip():
+            vtuber_cmd += ["--tts-model", str(args.tts_model)]
+        if bool(args.tts):
+            vtuber_cmd += ["--tts-mode", str(args.tts_mode)]
+            vtuber_cmd += ["--tts-device", str(args.tts_device)]
+            if bool(args.tts_f16):
+                vtuber_cmd.append("--tts-f16")
+            if int(args.tts_n_timesteps or 0) > 0:
+                vtuber_cmd += ["--tts-n-timesteps", str(int(args.tts_n_timesteps))]
+
+            prompt_wav = str(args.tts_prompt_wav or "").strip()
+            if not prompt_wav:
+                raise ValueError("Missing required arg for --tts: --tts-prompt-wav")
+            vtuber_cmd += ["--tts-prompt-wav", str(Path(prompt_wav).expanduser().resolve())]
+            if str(args.tts_prompt_text or "").strip():
+                vtuber_cmd += ["--tts-prompt-text", str(args.tts_prompt_text)]
+            if str(args.tts_prompt_transcript or "").strip():
+                vtuber_cmd += ["--tts-prompt-transcript", str(args.tts_prompt_transcript)]
+            if str(args.tts_instruct_text or "").strip():
+                vtuber_cmd += ["--tts-instruct-text", str(args.tts_instruct_text)]
 
         print("vtuber> " + " ".join(vtuber_cmd))
         vtuber_proc = subprocess.Popen(vtuber_cmd, cwd=str(repo_root), text=True)
@@ -185,4 +216,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

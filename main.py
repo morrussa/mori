@@ -13,7 +13,11 @@ from mori_llm.llama_cpp_cli import (
 )
 from mori_llm.pipeline import MoriPipeline
 from mori_memory.bridge import MoriMemoryBridge
-from mori_tts.qwen3_tts import QWEN3_TTS_DEFAULT_MODEL, is_cuda_runtime, synthesize as qwen3_tts_synthesize
+from mori_tts.cosyvoice3_tts import (
+    COSYVOICE3_DEFAULT_MODEL,
+    COSYVOICE3_DEFAULT_PROMPT_PREFIX,
+    CosyVoice3TTS,
+)
 
 
 def _blocks_to_messages(blocks: object) -> list[dict[str, str]]:
@@ -55,7 +59,7 @@ def _default_system_prompt() -> str:
 def parse_args() -> argparse.Namespace:
     repo_root = Path(__file__).resolve().parent
     model_dir = repo_root / "model"
-    tts_root = model_dir / "tts" / "qwen3_tts_rs"
+    tts_root = model_dir / "tts" / "cosyvoice3"
 
     parser = argparse.ArgumentParser(prog="mori", description="Mori entrypoint (memory + llama.cpp).")
     parser.add_argument("--workdir", default=str(repo_root), help="Working directory (stores memory/ by default).")
@@ -72,17 +76,22 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--top-p", type=float, default=0.9, help="llama-cli --top-p.")
     parser.add_argument("--system", default=_default_system_prompt(), help="Base system prompt.")
 
-    parser.add_argument("--tts", action="store_true", help="Enable TTS (qwen3_tts_rs).")
+    parser.add_argument("--tts", action="store_true", help="Enable TTS (cosyvoice3).")
+    parser.add_argument("--tts-root", default=str(tts_root), help="CosyVoice3 model root dir (contains <model>/config.json).")
+    parser.add_argument("--tts-model", default=COSYVOICE3_DEFAULT_MODEL, help="Model dir name under <tts-root>/ (or pass an absolute dir).")
     parser.add_argument(
-        "--tts-cuda",
-        action="store_true",
-        help="Require CUDA runtime build for TTS (fail if CPU build).",
+        "--tts-mode",
+        choices=["zero_shot", "cross_lingual", "instruct"],
+        default="zero_shot",
+        help="Synthesis mode: zero_shot (needs prompt text+wav), cross_lingual (wav only), instruct (instruct+wav).",
     )
-    parser.add_argument("--tts-root", default=str(tts_root), help="qwen3_tts_rs install dir (contains tts + models/).")
-    parser.add_argument("--tts-model", default=QWEN3_TTS_DEFAULT_MODEL, help="Model dir name under <tts-root>/models/.")
-    parser.add_argument("--tts-speaker", default="Vivian", help="Speaker name (CustomVoice model).")
-    parser.add_argument("--tts-language", default="chinese", help="Language name (e.g. chinese/english).")
-    parser.add_argument("--tts-instruction", default="", help="Optional voice instruction (1.7B CustomVoice).")
+    parser.add_argument("--tts-device", choices=["auto", "cpu", "cuda", "metal"], default="auto", help="Device for inference.")
+    parser.add_argument("--tts-f16", action="store_true", help="Use FP16 precision (GPU only).")
+    parser.add_argument("--tts-prompt-wav", default="", help="Reference voice audio path (required when --tts is on).")
+    parser.add_argument("--tts-prompt-text", default="", help="Full prompt_text for zero_shot (prefix+transcript).")
+    parser.add_argument("--tts-prompt-transcript", default="", help="Transcript of prompt wav (appended to required prefix).")
+    parser.add_argument("--tts-instruct-text", default="", help="Instruction text for instruct mode.")
+    parser.add_argument("--tts-n-timesteps", type=int, default=10, help="Number of flow sampling steps (default: 10).")
     parser.add_argument(
         "--tts-out-dir",
         default="tts_out",
@@ -135,13 +144,31 @@ def main() -> int:
     print("命令：/tts on|off|toggle  切换语音输出。")
 
     tts_enabled = bool(args.tts)
-    tts_require_cuda = bool(args.tts_cuda)
+    tts_engine: CosyVoice3TTS | None = None
     if tts_enabled:
-        try:
-            runtime = "cuda" if is_cuda_runtime(args.tts_root) else "cpu"
-            print(f"tts> runtime={runtime} root={Path(args.tts_root).expanduser().resolve()}")
-        except Exception as e:
-            print(f"tts> runtime check failed: {e}")
+        prompt_wav = str(args.tts_prompt_wav or "").strip()
+        if not prompt_wav:
+            print("tts> 失败：缺少 --tts-prompt-wav（参考音频）")
+            tts_enabled = False
+        else:
+            try:
+                tts_engine = CosyVoice3TTS(
+                    tts_root=args.tts_root,
+                    model=args.tts_model,
+                    device=args.tts_device,
+                    use_f16=bool(args.tts_f16),
+                )
+                print(
+                    "tts> cosyvoice3"
+                    f" mode={args.tts_mode}"
+                    f" device={args.tts_device}"
+                    f" f16={bool(args.tts_f16)}"
+                    f" sr={tts_engine.sample_rate}"
+                    f" model={tts_engine.paths.model_dir}"
+                )
+            except Exception as e:
+                print(f"tts> init failed: {e}")
+                tts_enabled = False
     turn = 1
     while True:
         try:
@@ -193,15 +220,21 @@ def main() -> int:
         if tts_enabled:
             wav_path = tts_out_dir / f"turn_{turn:04d}.wav"
             try:
-                qwen3_tts_synthesize(
+                if tts_engine is None:
+                    raise RuntimeError("tts engine not initialized")
+                prompt_text = str(args.tts_prompt_text or "").strip()
+                if not prompt_text:
+                    transcript = str(args.tts_prompt_transcript or "").strip()
+                    prompt_text = COSYVOICE3_DEFAULT_PROMPT_PREFIX + transcript if transcript else COSYVOICE3_DEFAULT_PROMPT_PREFIX
+
+                tts_engine.synthesize_to_wav(
                     text=assistant,
                     out_wav_path=wav_path,
-                    tts_root=args.tts_root,
-                    model=args.tts_model,
-                    speaker=args.tts_speaker,
-                    language=args.tts_language,
-                    instruction=str(args.tts_instruction or "").strip() or None,
-                    require_cuda=tts_require_cuda,
+                    mode=str(args.tts_mode),
+                    prompt_wav_path=args.tts_prompt_wav,
+                    prompt_text=prompt_text,
+                    instruct_text=str(args.tts_instruct_text or "").strip() or COSYVOICE3_DEFAULT_PROMPT_PREFIX,
+                    n_timesteps=int(args.tts_n_timesteps),
                 )
                 print(f"tts> {wav_path}")
             except Exception as e:
