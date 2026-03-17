@@ -111,7 +111,7 @@ python3 vtuber.py --tts --tts-device cuda --tts-f16 --live-dir live \
 
 - `live/subtitle.txt`（OBS 文本源可直接“从文件读取”）
 - `live/events.jsonl`
-- `live/audio/turn_XXXX.wav`（启用 `--tts` 时）
+- `live/audio/turn_XXXX_seg_YY.wav`（启用 `--tts` 时，按段生成，便于低延迟播放/打断）
 
 ### Bilibili 弹幕（参考 my-neuro）
 
