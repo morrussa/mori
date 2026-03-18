@@ -142,6 +142,27 @@ local function drain_tts(bus, ctx, cfg, canceled_intents)
     end
 end
 
+local function detect_next_turn()
+    local path = "memory/history.txt"
+    local f = io.open(path, "r")
+    if not f then
+        return 1
+    end
+    local header = f:read("*l")
+    if header ~= "HIST_V2" then
+        f:close()
+        return 1
+    end
+    local n = 0
+    for line in f:lines() do
+        if line and line ~= "" then
+            n = n + 1
+        end
+    end
+    f:close()
+    return math.max(1, n + 1)
+end
+
 local function run_intent(bus, ctx, cfg, intent, pending, canceled_intents)
     local turn = tonumber(intent.turn or 0) or 0
 
@@ -328,7 +349,7 @@ local function run_intent(bus, ctx, cfg, intent, pending, canceled_intents)
         llm_error = llm_err or "",
     })
 
-    bus:call(protocol.events.MEMORY_INGEST_TURN, {
+    local mem_res = bus:call(protocol.events.MEMORY_INGEST_TURN, {
         turn = turn,
         user_input = user_input,
         raw_user_input = raw_user_input,
@@ -338,7 +359,22 @@ local function run_intent(bus, ctx, cfg, intent, pending, canceled_intents)
         user_id = intent.user_id,
         room_id = intent.room_id,
         timeline = intent.timeline,
-    })
+    }) or {}
+    if type(mem_res) == "table" and type(mem_res.disentangle) == "table" then
+        local d = mem_res.disentangle
+        if d.dropped == true or d.is_new == true or d.merged == true or tostring(d.reason or "") == "reset_topic" then
+            bus:emit(protocol.events.OUTPUT_EVENT, {
+                ts = now(ctx),
+                type = "memory_mark",
+                turn = turn,
+                intent_id = intent.intent_id,
+                scope_key = tostring(mem_res.scope_key or ""),
+                topic_anchor = tostring(mem_res.topic_anchor or ""),
+                disentangle = d,
+                skipped = mem_res.skipped == true,
+            })
+        end
+    end
 
     bus:emit(protocol.events.SPEECH_INTENT_END, {
         ts = now(ctx),
@@ -378,7 +414,7 @@ function M.run(config, ctx)
     end)
 
     local pending = {}
-    local turn = 1
+    local turn = detect_next_turn()
     local running = true
 
     bus:emit(protocol.events.OUTPUT_PRINT, { text = "Mori 已启动。输入 /exit 退出。" })
