@@ -54,16 +54,27 @@ function M.setup(bus, ctx)
         local blocks = bus:call(protocol.events.MEMORY_COMPILE_CONTEXT, memory_meta) or {}
 
         local messages = {}
-        messages[#messages + 1] = { role = "system", content = system_prompt }
+        local system_parts = {}
+        if system_prompt ~= "" then
+            system_parts[#system_parts + 1] = system_prompt
+        end
 
         for block in iter_sequence(blocks) do
             if type(block) == "table" then
                 local role = trim(block.role or block["role"])
                 local content = trim(block.content or block["content"])
                 if role ~= "" and content ~= "" then
-                    messages[#messages + 1] = { role = role, content = content }
+                    if role == "system" then
+                        system_parts[#system_parts + 1] = content
+                    else
+                        messages[#messages + 1] = { role = role, content = content }
+                    end
                 end
             end
+        end
+
+        if #system_parts > 0 then
+            table.insert(messages, 1, { role = "system", content = table.concat(system_parts, "\n\n") })
         end
 
         messages[#messages + 1] = { role = "user", content = user_input }

@@ -20,6 +20,45 @@ local function now(ctx)
     return os.time()
 end
 
+local function is_record_like(value)
+    local t = type(value)
+    return t == "table" or t == "userdata"
+end
+
+local function iter_sequence_like(value)
+    if value == nil then
+        return function()
+            return nil
+        end
+    end
+
+    if type(value) == "table" then
+        local i = 0
+        return function()
+            i = i + 1
+            return value[i]
+        end
+    end
+
+    if type(value) == "userdata" then
+        local i = -1
+        return function()
+            i = i + 1
+            local ok, item = pcall(function()
+                return value[i]
+            end)
+            if not ok then
+                return nil
+            end
+            return item
+        end
+    end
+
+    return function()
+        return nil
+    end
+end
+
 local function default_system_prompt()
     return table.concat({
         "你是 Mori，一个本地运行的助手。",
@@ -104,9 +143,8 @@ local function drain_inbox(ctx, pending, max_items)
         return 0
     end
     local count = 0
-    for i = 1, #(items or {}) do
-        local ev = items[i]
-        if type(ev) == "table" then
+    for ev in iter_sequence_like(items) do
+        if is_record_like(ev) then
             count = count + 1
             ev.enqueued_at = ev.enqueued_at or now(ctx)
             pending[#pending + 1] = ev
@@ -117,9 +155,8 @@ end
 
 local function drain_tts(bus, ctx, cfg, canceled_intents)
     local results = bus:call(protocol.events.TTS_DRAIN, {}) or {}
-    for i = 1, #(results or {}) do
-        local r = results[i]
-        if type(r) == "table" then
+    for r in iter_sequence_like(results) do
+        if is_record_like(r) then
             local iid = tostring(r.intent_id or "")
             if canceled_intents and canceled_intents[iid] then
                 -- drop
@@ -425,7 +462,7 @@ function M.run(config, ctx)
             local ok, ev = pcall(function()
                 return ctx.py_inbox:get()
             end)
-            if ok and type(ev) == "table" then
+            if ok and is_record_like(ev) then
                 ev.enqueued_at = ev.enqueued_at or now(ctx)
                 pending[#pending + 1] = ev
             end

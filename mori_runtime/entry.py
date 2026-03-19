@@ -19,6 +19,17 @@ from mori_tts.cosyvoice3_tts import (
 )
 
 
+class _LuaBridgeMap(dict[str, Any]):
+    def __getitem__(self, key: object) -> Any:
+        return dict.get(self, key)
+
+
+def _bridge_record(value: dict[str, Any] | _LuaBridgeMap) -> _LuaBridgeMap:
+    if isinstance(value, _LuaBridgeMap):
+        return value
+    return _LuaBridgeMap(value)
+
+
 def _default_system_prompt() -> str:
     return "\n".join(
         [
@@ -45,29 +56,30 @@ def _parse_bilibili_room_id(value: str) -> int:
 
 class PyInbox:
     def __init__(self) -> None:
-        self._q: queue.Queue[dict[str, Any]] = queue.Queue(maxsize=2048)
+        self._q: queue.Queue[_LuaBridgeMap] = queue.Queue(maxsize=2048)
         self._closed = False
 
     def put(self, ev: dict[str, Any]) -> None:
         if self._closed:
             return
+        bridged = _bridge_record(ev)
         try:
-            self._q.put(ev, timeout=0.1)
+            self._q.put(bridged, timeout=0.1)
         except queue.Full:
             try:
                 _ = self._q.get_nowait()
             except queue.Empty:
                 pass
             try:
-                self._q.put(ev, timeout=0.1)
+                self._q.put(bridged, timeout=0.1)
             except queue.Full:
                 pass
 
-    def get(self) -> dict[str, Any]:
+    def get(self) -> _LuaBridgeMap:
         return self._q.get()
 
-    def drain_nowait(self, max_items: int = 32) -> list[dict[str, Any]]:
-        out: list[dict[str, Any]] = []
+    def drain_nowait(self, max_items: int = 32) -> list[_LuaBridgeMap]:
+        out: list[_LuaBridgeMap] = []
         for _ in range(max(0, int(max_items))):
             try:
                 out.append(self._q.get_nowait())
@@ -76,8 +88,21 @@ class PyInbox:
         return out
 
     def close(self) -> None:
+        if self._closed:
+            return
         self._closed = True
-        self.put({"source": "system", "text": "/exit", "priority": 10_000, "enqueued_at": time.time()})
+        bridged = _bridge_record({"source": "system", "text": "/exit", "priority": 10_000, "enqueued_at": time.time()})
+        try:
+            self._q.put(bridged, timeout=0.1)
+        except queue.Full:
+            try:
+                _ = self._q.get_nowait()
+            except queue.Empty:
+                pass
+            try:
+                self._q.put(bridged, timeout=0.1)
+            except queue.Full:
+                pass
 
 
 class PyLLM:
@@ -223,8 +248,8 @@ class PyTTS:
             self._jobs[job_id] = (job, fut)
         return job_id
 
-    def drain(self, _payload: object | None = None) -> list[dict[str, Any]]:
-        done: list[dict[str, Any]] = []
+    def drain(self, _payload: object | None = None) -> list[_LuaBridgeMap]:
+        done: list[_LuaBridgeMap] = []
         with self._lock:
             items = list(self._jobs.items())
         for job_id, (job, fut) in items:
@@ -241,20 +266,22 @@ class PyTTS:
             with self._lock:
                 self._jobs.pop(job_id, None)
             done.append(
-                {
-                    "job_id": job_id,
-                    "intent_id": job.intent_id,
-                    "turn": job.turn,
-                    "source": job.source,
-                    "nickname": job.nickname,
-                    "segment_idx": job.segment_idx,
-                    "text": job.text,
-                    "wav_path": wav_path if ok else "",
-                    "ok": ok,
-                    "error": err,
-                    "created_at": job.created_at,
-                    "finished_at": time.time(),
-                }
+                _bridge_record(
+                    {
+                        "job_id": job_id,
+                        "intent_id": job.intent_id,
+                        "turn": job.turn,
+                        "source": job.source,
+                        "nickname": job.nickname,
+                        "segment_idx": job.segment_idx,
+                        "text": job.text,
+                        "wav_path": wav_path if ok else "",
+                        "ok": ok,
+                        "error": err,
+                        "created_at": job.created_at,
+                        "finished_at": time.time(),
+                    }
+                )
             )
         return done
 
@@ -306,6 +333,17 @@ def _setup_lua_runtime(*, repo_root: Path):
     append_path(str(live_root / "?/init.lua"))
 
     return lua
+
+
+def _to_lua_value(lua, value: Any):
+    if isinstance(value, dict):
+        out: dict[object, object] = {}
+        for k, v in value.items():
+            out[k] = _to_lua_value(lua, v)
+        return lua.table_from(out)
+    if isinstance(value, (list, tuple)):
+        return lua.table_from([_to_lua_value(lua, item) for item in value])
+    return value
 
 
 def _start_stdin_thread(inbox: PyInbox, *, priority: int) -> threading.Thread:
@@ -649,15 +687,17 @@ def _run(*, mode: str, args: argparse.Namespace) -> int:
     if not config["system_prompt"]:
         config["system_prompt"] = _default_system_prompt()
 
+    config_lua = _to_lua_value(lua, config)
+
     ctx = lua.table_from(
         {
             "py_llm": py_llm,
             "py_tts": py_tts,
             "py_inbox": inbox,
             "py_now": time.time,
-            "config": config,
+            "config": config_lua,
         }
     )
 
     app = lua.eval("require")("mori.app.runtime")
-    return int(app.run(lua.table_from(config), ctx) or 0)
+    return int(app.run(config_lua, ctx) or 0)
