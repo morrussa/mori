@@ -1,0 +1,131 @@
+{
+  "finished_at": 1773838761.433452,
+  "finished_at_iso": "2026-03-18T20:59:21+0800",
+  "duration_s": 12.79,
+  "room_id": 3971693,
+  "room_offline_seen": false,
+  "processed_messages": 8,
+  "turns_attempted": 8,
+  "error_count": 0,
+  "compile_ms": {
+    "count": 8,
+    "p50_ms": 17.921,
+    "p95_ms": 174.129,
+    "max_ms": 239.552
+  },
+  "ingest_ms": {
+    "count": 8,
+    "p50_ms": 61.267,
+    "p95_ms": 77.856,
+    "max_ms": 83.084
+  },
+  "avg_context_chars": 141.62,
+  "empty_context_rate": 0.0,
+  "flow_reason_counts": {
+    "create": 3,
+    "orphan_overflow": 5
+  },
+  "flow_mode_counts": {
+    "single": 1,
+    "split": 7
+  },
+  "flag_counts": {
+    "is_new": 8,
+    "local_only": 5,
+    "orphaned": 5,
+    "pending_only": 5
+  },
+  "last_room": {
+    "room_id": 3971693,
+    "live_status": 1,
+    "title": "电工工作已离职，全职干直播！",
+    "online": 58454,
+    "live_time": "2026-03-18 20:03:07",
+    "raw": {
+      "keyframe": "https://i0.hdslb.com/bfs/live-key-frame/keyframe03182058000003971693tpedzv.jpg",
+      "is_strict_room": false,
+      "tags": "守望先锋,路霸,ow,小金猪,守望先锋归来,守望先锋2,游戏",
+      "hot_words_status": 0,
+      "verify": "",
+      "new_pendants": {
+        "mobile_frame": {
+          "name": "百人舰队主播头像",
+          "value": "https://i0.hdslb.com/bfs/vc/071eb10548fe9bc482ff69331983d94192ce9507.png",
+          "position": 0,
+          "desc": "",
+          "area": 0,
+          "area_old": 0,
+          "bg_color": "",
+          "bg_pic": "",
+          "use_old_area": false
+        },
+        "frame": {
+          "name": "百人舰队主播头像",
+          "value": "https://i0.hdslb.com/bfs/vc/071eb10548fe9bc482ff69331983d94192ce9507.png",
+          "position": 0,
+          "desc": "",
+          "area": 0,
+          "area_old": 0,
+          "bg_color": "",
+          "bg_pic": "",
+          "use_old_area": false
+        }
+      },
+      "is_anchor": 0,
+      "room_silent_type": "",
+      "room_silent_level": 0,
+      "room_silent_second": 0,
+      "area_name": "守望先锋",
+      "pendants": "",
+      "area_pendants": "",
+      "hot_words": {
+        "1": "2333333",
+        "2": "喂，妖妖零吗",
+        "3": "红红火火恍恍惚惚",
+        "4": "FFFFFFFFFF",
+        "5": "Yooooooo",
+        "6": "啪啪啪啪啪",
+        "7": "666666666",
+        "8": "老司机带带我",
+        "9": "你为什么这么熟练啊",
+        "10": "gg",
+        "11": "prprpr",
+        "12": "向大佬低头",
+        "13": "请大家注意弹幕礼仪哦！",
+        "14": "还有这种操作！",
+        "15": "囍",
+        "16": "打call",
+        "17": "你气不气？",
+        "18": "队友呢？"
+      },
+      "up_session": "684169611444001389",
+      "pk_status": 0,
+      "pk_id": 0,
+      "short_id": 0,
+      "attention": 55899,
+      "allow_upload_cover_time": 0,
+      "area_id": 87,
+      "parent_area_id": 2,
+      "is_portrait": false,
+      "description": "国服亚服双英杰路霸，最强路霸，16年打到现在，最高国服第三，4600分留榜前十。",
+      "old_area_id": 3,
+      "background": "",
+      "title": "电工工作已离职，全职干直播！",
+      "online": 58454,
+      "live_time": "2026-03-18 20:03:07",
+      "studio_info": {
+        "status": 0,
+        "master_list": {}
+      },
+      "allow_change_area_time": 0,
+      "battle_id": 0,
+      "uid": 23486547,
+      "user_cover": "https://i0.hdslb.com/bfs/live/new_room_cover/6298a4412f6bee8b2e43f9d38142038492235278.jpg",
+      "room_id": 3971693,
+      "live_status": 1,
+      "parent_area_name": "网游"
+    }
+  },
+  "last_room_error": "",
+  "run_dir": "/home/morusa/AI/mori/live_capture/bilibili_room_3971693_20260318-205900"
+}

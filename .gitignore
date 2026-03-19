@@ -22,3 +22,4 @@ logs/
 live/
 .codebuddy/
 langgraph-main(example)/
+/.venv/

@@ -1,0 +1,402 @@
+run_dir=/home/morusa/AI/mori/live_capture/bilibili_room_3971693_20260318-210826
+room=3971693 live_status=1 online=56983 title=电工工作已离职，全职干直播！
+[History] history.txt 不存在，使用空历史
+[Topic] 模块初始化完成
+[Topic] 开启新话题: 第1轮
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=25 turn=25 blocks=1 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=50 turn=50 blocks=2 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=75 turn=75 blocks=1 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=100 turn=100 blocks=1 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=125 turn=125 blocks=1 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=150 turn=150 blocks=1 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=175 turn=175 blocks=2 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=200 turn=200 blocks=1 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=225 turn=225 blocks=2 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=250 turn=250 blocks=1 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=275 turn=275 blocks=1 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=300 turn=300 blocks=2 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=325 turn=325 blocks=1 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=350 turn=350 blocks=1 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=375 turn=375 blocks=1 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=400 turn=400 blocks=1 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=425 turn=425 blocks=1 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=450 turn=450 blocks=1 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=475 turn=475 blocks=1 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=500 turn=500 blocks=2 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=525 turn=525 blocks=1 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=550 turn=550 blocks=1 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=575 turn=575 blocks=1 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=600 turn=600 blocks=2 reason=promote_orphan mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=625 turn=625 blocks=2 reason=promote_orphan mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=650 turn=650 blocks=1 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=675 turn=675 blocks=1 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=700 turn=700 blocks=1 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=725 turn=725 blocks=1 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=750 turn=750 blocks=3 reason=assign mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=775 turn=775 blocks=1 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=800 turn=800 blocks=1 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=825 turn=825 blocks=1 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=850 turn=850 blocks=1 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=875 turn=875 blocks=2 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=900 turn=900 blocks=2 reason=promote_orphan mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=925 turn=925 blocks=1 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=950 turn=950 blocks=1 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=975 turn=975 blocks=2 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=1000 turn=1000 blocks=1 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=1025 turn=1025 blocks=1 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=1050 turn=1050 blocks=1 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=1075 turn=1075 blocks=1 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=1100 turn=1100 blocks=2 reason=promote_orphan mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=1125 turn=1125 blocks=1 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=1150 turn=1150 blocks=1 reason=keep_pending mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=1175 turn=1175 blocks=1 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=1200 turn=1200 blocks=1 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=1225 turn=1225 blocks=1 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=1250 turn=1250 blocks=1 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=1275 turn=1275 blocks=2 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=1300 turn=1300 blocks=1 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=1325 turn=1325 blocks=1 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=1350 turn=1350 blocks=1 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=1375 turn=1375 blocks=1 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=1400 turn=1400 blocks=1 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=1425 turn=1425 blocks=1 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=1450 turn=1450 blocks=1 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=1475 turn=1475 blocks=1 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=1500 turn=1500 blocks=1 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=1525 turn=1525 blocks=2 reason=promote_orphan mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=1550 turn=1550 blocks=2 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=1575 turn=1575 blocks=1 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=1600 turn=1600 blocks=1 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=1625 turn=1625 blocks=1 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=1650 turn=1650 blocks=1 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=1675 turn=1675 blocks=1 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=1700 turn=1700 blocks=1 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=1725 turn=1725 blocks=2 reason=promote_orphan mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=1750 turn=1750 blocks=2 reason=promote_orphan mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=1775 turn=1775 blocks=1 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=1800 turn=1800 blocks=1 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=1825 turn=1825 blocks=1 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=1850 turn=1850 blocks=1 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=1875 turn=1875 blocks=1 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=1900 turn=1900 blocks=1 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=1925 turn=1925 blocks=2 reason=keep_pending mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=1950 turn=1950 blocks=1 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=1975 turn=1975 blocks=1 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=2000 turn=2000 blocks=1 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=2025 turn=2025 blocks=1 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=2050 turn=2050 blocks=1 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=2075 turn=2075 blocks=1 reason=keep_pending mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=2100 turn=2100 blocks=1 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=2125 turn=2125 blocks=2 reason=keep_pending mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=2150 turn=2150 blocks=2 reason=keep_pending mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=2175 turn=2175 blocks=2 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=2200 turn=2200 blocks=2 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=2225 turn=2225 blocks=1 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=2250 turn=2250 blocks=1 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=2275 turn=2275 blocks=4 reason=promote_orphan mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=2300 turn=2300 blocks=1 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=2325 turn=2325 blocks=1 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=2350 turn=2350 blocks=1 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=2375 turn=2375 blocks=1 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=2400 turn=2400 blocks=1 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=2425 turn=2425 blocks=3 reason=keep_pending mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=2450 turn=2450 blocks=1 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=2475 turn=2475 blocks=1 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=2500 turn=2500 blocks=2 reason=promote_orphan mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=2525 turn=2525 blocks=1 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=2550 turn=2550 blocks=1 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=2575 turn=2575 blocks=2 reason=promote_orphan mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=2600 turn=2600 blocks=1 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=2625 turn=2625 blocks=1 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=2650 turn=2650 blocks=1 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=2675 turn=2675 blocks=1 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=2700 turn=2700 blocks=1 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=2725 turn=2725 blocks=1 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=2750 turn=2750 blocks=1 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=2775 turn=2775 blocks=2 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=2800 turn=2800 blocks=1 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=2825 turn=2825 blocks=1 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=2850 turn=2850 blocks=1 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=2875 turn=2875 blocks=1 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=2900 turn=2900 blocks=1 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=2925 turn=2925 blocks=1 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=2950 turn=2950 blocks=1 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=2975 turn=2975 blocks=1 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=3000 turn=3000 blocks=1 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=3025 turn=3025 blocks=1 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=3050 turn=3050 blocks=2 reason=keep_pending mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=3075 turn=3075 blocks=1 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=3100 turn=3100 blocks=1 reason=orphan_overflow mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=3125 turn=3125 blocks=2 reason=assign mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+processed=3150 turn=3150 blocks=1 reason=assign mode=split
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+[Saver] 正在原子保存并归档...
+[Topic] 退出时标记未完成话题: 1-? (last_turn=1)，下次启动将重建
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+[Saver] === 开始原子保存 memory 状态 ===
+[Saver] topic_graph + history.txt 已更新
+done processed=3168 errors=1 room_offline=1 summary=/home/morusa/AI/mori/live_capture/bilibili_room_3971693_20260318-210826/summary.json
