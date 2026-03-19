@@ -9,9 +9,15 @@ import sys
 import time
 from pathlib import Path
 
-
 def _repo_root() -> Path:
     return Path(__file__).resolve().parent.parent
+
+
+REPO_ROOT = _repo_root()
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from mori_runtime.config import DEFAULT_CONFIG_NAME, apply_config_defaults  # noqa: E402
 
 
 def _parse_semver(tag: str) -> tuple[int, int, int, int]:
@@ -65,11 +71,16 @@ def _detect_platform() -> str:
     return sys.platform
 
 
-def parse_args() -> argparse.Namespace:
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     repo_root = _repo_root()
     p = argparse.ArgumentParser(
         prog="run-bili-vtuber-inochi",
         description="Launch: Inochi Session (frontend) + vtuber.py (bilibili danmaku -> subtitles + optional TTS wav).",
+    )
+    p.add_argument(
+        "--config",
+        default="",
+        help=f"Path to unified config JSON (auto-loads ./{DEFAULT_CONFIG_NAME} or <repo>/{DEFAULT_CONFIG_NAME} when present).",
     )
     p.add_argument("--workdir", default=str(repo_root), help="Passed to vtuber.py --workdir.")
     p.add_argument("--live-dir", default="live", help="Passed to vtuber.py --live-dir.")
@@ -85,21 +96,17 @@ def parse_args() -> argparse.Namespace:
     )
 
     p.add_argument("--tts", action="store_true", help="Enable TTS (vtuber.py --tts).")
-    p.add_argument("--tts-root", default="", help="Optional override for vtuber.py --tts-root.")
     p.add_argument("--tts-model", default="", help="Optional override for vtuber.py --tts-model.")
-    p.add_argument(
-        "--tts-mode",
-        choices=["zero_shot", "cross_lingual", "instruct"],
-        default="zero_shot",
-        help="Passed to vtuber.py --tts-mode.",
-    )
-    p.add_argument("--tts-device", choices=["auto", "cpu", "cuda", "metal"], default="auto", help="Passed to vtuber.py --tts-device.")
-    p.add_argument("--tts-f16", action="store_true", help="Passed to vtuber.py --tts-f16.")
-    p.add_argument("--tts-n-timesteps", type=int, default=0, help="Optional override for vtuber.py --tts-n-timesteps.")
+    p.add_argument("--tts-device", choices=["auto", "cpu", "cuda", "mps", "metal"], default="auto", help="Passed to vtuber.py --tts-device.")
+    p.add_argument("--tts-threads", type=int, default=0, help="Optional override for vtuber.py --tts-threads.")
     p.add_argument("--tts-prompt-wav", default="", help="Passed to vtuber.py --tts-prompt-wav (required when --tts).")
-    p.add_argument("--tts-prompt-text", default="", help="Passed to vtuber.py --tts-prompt-text.")
-    p.add_argument("--tts-prompt-transcript", default="", help="Passed to vtuber.py --tts-prompt-transcript.")
-    p.add_argument("--tts-instruct-text", default="", help="Passed to vtuber.py --tts-instruct-text.")
+    p.add_argument("--tts-prompt-duration", type=float, default=0.0, help="Optional override for vtuber.py --tts-prompt-duration.")
+    p.add_argument("--tts-prompt-rms", type=float, default=0.0, help="Optional override for vtuber.py --tts-prompt-rms.")
+    p.add_argument("--tts-num-steps", type=int, default=0, help="Optional override for vtuber.py --tts-num-steps.")
+    p.add_argument("--tts-guidance-scale", type=float, default=0.0, help="Optional override for vtuber.py --tts-guidance-scale.")
+    p.add_argument("--tts-t-shift", type=float, default=0.0, help="Optional override for vtuber.py --tts-t-shift.")
+    p.add_argument("--tts-speed", type=float, default=0.0, help="Optional override for vtuber.py --tts-speed.")
+    p.add_argument("--tts-return-smooth", action="store_true", help="Passed to vtuber.py --tts-return-smooth.")
 
     p.add_argument("--inochi-root", default=str(_default_inochi_root(repo_root)), help="Root for model/inochi2d.")
     p.add_argument("--inochi-bin", default="", help="Path to inochi-session executable (auto-detect if empty).")
@@ -108,7 +115,8 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Wayland workaround: run Inochi Session with SDL_VIDEODRIVER=x11.",
     )
-    return p.parse_args()
+    apply_config_defaults(p, argv=argv, repo_root=repo_root, profile="inochi")
+    return p.parse_args(argv)
 
 
 def main() -> int:
@@ -150,6 +158,8 @@ def main() -> int:
             print(f"inochi> not found: {inochi_bin} (skip launching)")
 
         vtuber_cmd = [sys.executable, "-u", str((repo_root / "vtuber.py").resolve())]
+        if str(args.config or "").strip():
+            vtuber_cmd += ["--config", str(args.config)]
         vtuber_cmd += ["--workdir", str(Path(args.workdir).expanduser().resolve())]
         vtuber_cmd += ["--live-dir", str(args.live_dir)]
         if int(args.bilibili_room_id or 0) > 0:
@@ -162,28 +172,31 @@ def main() -> int:
             vtuber_cmd.append("--bilibili-exit-when-offline")
         if bool(args.tts):
             vtuber_cmd.append("--tts")
-        if str(args.tts_root or "").strip():
-            vtuber_cmd += ["--tts-root", str(args.tts_root)]
         if str(args.tts_model or "").strip():
             vtuber_cmd += ["--tts-model", str(args.tts_model)]
         if bool(args.tts):
-            vtuber_cmd += ["--tts-mode", str(args.tts_mode)]
             vtuber_cmd += ["--tts-device", str(args.tts_device)]
-            if bool(args.tts_f16):
-                vtuber_cmd.append("--tts-f16")
-            if int(args.tts_n_timesteps or 0) > 0:
-                vtuber_cmd += ["--tts-n-timesteps", str(int(args.tts_n_timesteps))]
+            if int(args.tts_threads or 0) > 0:
+                vtuber_cmd += ["--tts-threads", str(int(args.tts_threads))]
 
             prompt_wav = str(args.tts_prompt_wav or "").strip()
             if not prompt_wav:
                 raise ValueError("Missing required arg for --tts: --tts-prompt-wav")
             vtuber_cmd += ["--tts-prompt-wav", str(Path(prompt_wav).expanduser().resolve())]
-            if str(args.tts_prompt_text or "").strip():
-                vtuber_cmd += ["--tts-prompt-text", str(args.tts_prompt_text)]
-            if str(args.tts_prompt_transcript or "").strip():
-                vtuber_cmd += ["--tts-prompt-transcript", str(args.tts_prompt_transcript)]
-            if str(args.tts_instruct_text or "").strip():
-                vtuber_cmd += ["--tts-instruct-text", str(args.tts_instruct_text)]
+            if float(args.tts_prompt_duration or 0.0) > 0.0:
+                vtuber_cmd += ["--tts-prompt-duration", str(float(args.tts_prompt_duration))]
+            if float(args.tts_prompt_rms or 0.0) > 0.0:
+                vtuber_cmd += ["--tts-prompt-rms", str(float(args.tts_prompt_rms))]
+            if int(args.tts_num_steps or 0) > 0:
+                vtuber_cmd += ["--tts-num-steps", str(int(args.tts_num_steps))]
+            if float(args.tts_guidance_scale or 0.0) > 0.0:
+                vtuber_cmd += ["--tts-guidance-scale", str(float(args.tts_guidance_scale))]
+            if float(args.tts_t_shift or 0.0) > 0.0:
+                vtuber_cmd += ["--tts-t-shift", str(float(args.tts_t_shift))]
+            if float(args.tts_speed or 0.0) > 0.0:
+                vtuber_cmd += ["--tts-speed", str(float(args.tts_speed))]
+            if bool(args.tts_return_smooth):
+                vtuber_cmd.append("--tts-return-smooth")
 
         print("vtuber> " + " ".join(vtuber_cmd))
         vtuber_proc = subprocess.Popen(vtuber_cmd, cwd=str(repo_root), text=True)

@@ -12,10 +12,17 @@ from typing import Any, Callable
 
 from mori_llm.llama_cpp_cli import pick_default_chat_model, pick_default_embed_model, resolve_llama_cpp_bin_dir
 from mori_llm.pipeline import MoriPipeline
-from mori_tts.cosyvoice3_tts import (
-    COSYVOICE3_DEFAULT_MODEL,
-    COSYVOICE3_DEFAULT_PROMPT_PREFIX,
-    CosyVoice3TTS,
+from mori_runtime.config import DEFAULT_CONFIG_NAME, apply_config_defaults
+from mori_tts.lux_tts import (
+    LUX_TTS_DEFAULT_GUIDANCE_SCALE,
+    LUX_TTS_DEFAULT_MODEL,
+    LUX_TTS_DEFAULT_NUM_STEPS,
+    LUX_TTS_DEFAULT_PROMPT_DURATION,
+    LUX_TTS_DEFAULT_PROMPT_RMS,
+    LUX_TTS_DEFAULT_SPEED,
+    LUX_TTS_DEFAULT_T_SHIFT,
+    LUX_TTS_DEFAULT_THREADS,
+    LuxTTS,
 )
 
 
@@ -48,7 +55,7 @@ def _parse_bilibili_room_id(value: str) -> int:
         return int(s)
     import re
 
-    m = re.search(r"live\\.bilibili\\.com/(\\d+)", s)
+    m = re.search(r"(?:https?://)?live\.bilibili\.com/(\d+)", s)
     if m:
         return int(m.group(1))
     return 0
@@ -166,22 +173,28 @@ class PyTTS:
     def __init__(
         self,
         *,
-        engine: CosyVoice3TTS,
-        mode: str,
+        engine: LuxTTS,
         prompt_wav_path: str,
-        prompt_text: str,
-        instruct_text: str,
-        n_timesteps: int,
+        prompt_duration: float,
+        prompt_rms: float,
+        num_steps: int,
+        guidance_scale: float,
+        t_shift: float,
+        speed: float,
+        return_smooth: bool,
         max_workers: int = 1,
     ) -> None:
         from concurrent.futures import ThreadPoolExecutor
 
         self._engine = engine
-        self._default_mode = str(mode or "zero_shot")
         self._default_prompt_wav_path = str(prompt_wav_path or "")
-        self._default_prompt_text = str(prompt_text or "")
-        self._default_instruct_text = str(instruct_text or "")
-        self._default_n_timesteps = int(n_timesteps)
+        self._default_prompt_duration = float(prompt_duration)
+        self._default_prompt_rms = float(prompt_rms)
+        self._default_num_steps = int(num_steps)
+        self._default_guidance_scale = float(guidance_scale)
+        self._default_t_shift = float(t_shift)
+        self._default_speed = float(speed)
+        self._default_return_smooth = bool(return_smooth)
 
         self._executor = ThreadPoolExecutor(max_workers=max(1, int(max_workers)))
         self._lock = threading.Lock()
@@ -211,11 +224,20 @@ class PyTTS:
         if not out_wav_path:
             raise ValueError("tts.submit missing out_wav_path")
 
-        mode = str(self._get(payload, "mode", self._default_mode) or self._default_mode)
         prompt_wav_path = str(self._get(payload, "prompt_wav_path", self._default_prompt_wav_path) or "")
-        prompt_text = str(self._get(payload, "prompt_text", self._default_prompt_text) or "")
-        instruct_text = str(self._get(payload, "instruct_text", self._default_instruct_text) or "")
-        n_timesteps = int(self._get(payload, "n_timesteps", self._default_n_timesteps) or self._default_n_timesteps)
+        prompt_duration = float(
+            self._get(payload, "prompt_duration", self._default_prompt_duration) or self._default_prompt_duration
+        )
+        prompt_rms = float(self._get(payload, "prompt_rms", self._default_prompt_rms) or self._default_prompt_rms)
+        num_steps = int(self._get(payload, "num_steps", self._default_num_steps) or self._default_num_steps)
+        guidance_scale = float(
+            self._get(payload, "guidance_scale", self._default_guidance_scale) or self._default_guidance_scale
+        )
+        t_shift = float(self._get(payload, "t_shift", self._default_t_shift) or self._default_t_shift)
+        speed = float(self._get(payload, "speed", self._default_speed) or self._default_speed)
+        return_smooth = bool(
+            self._get(payload, "return_smooth", self._default_return_smooth) or self._default_return_smooth
+        )
 
         job_id = f"{intent_id}:{segment_idx}:{time.time():.6f}:{random.randint(1000,9999)}"
         created_at = time.time()
@@ -235,11 +257,14 @@ class PyTTS:
             self._engine.synthesize_to_wav(
                 text=text,
                 out_wav_path=job.wav_path,
-                mode=mode,
                 prompt_wav_path=prompt_wav_path,
-                prompt_text=prompt_text,
-                instruct_text=instruct_text,
-                n_timesteps=n_timesteps,
+                prompt_duration=prompt_duration,
+                prompt_rms=prompt_rms,
+                num_steps=num_steps,
+                guidance_scale=guidance_scale,
+                t_shift=t_shift,
+                speed=speed,
+                return_smooth=return_smooth,
             )
             return job.wav_path
 
@@ -478,10 +503,13 @@ def _start_bilibili_thread(
 
 def _build_common_parser(*, prog: str) -> argparse.ArgumentParser:
     repo_root = Path(__file__).resolve().parents[1]
-    model_dir = repo_root / "model"
-    tts_root = model_dir / "tts" / "cosyvoice3"
 
     parser = argparse.ArgumentParser(prog=prog, description="Mori (Lua runtime + llama.cpp + memory + optional TTS).")
+    parser.add_argument(
+        "--config",
+        default="",
+        help=f"Path to unified config JSON (auto-loads ./{DEFAULT_CONFIG_NAME} or <repo>/{DEFAULT_CONFIG_NAME} when present).",
+    )
     parser.add_argument("--workdir", default=str(repo_root), help="Working directory (stores memory/ and live/ by default).")
     parser.add_argument("--llama-bin-dir", default=None, help="Path to llama.cpp build/bin.")
 
@@ -494,22 +522,37 @@ def _build_common_parser(*, prog: str) -> argparse.ArgumentParser:
     parser.add_argument("--top-p", type=float, default=0.9, help="top_p.")
     parser.add_argument("--system", default=_default_system_prompt(), help="Base system prompt.")
 
-    parser.add_argument("--tts", action="store_true", help="Enable TTS (cosyvoice3).")
-    parser.add_argument("--tts-root", default=str(tts_root), help="CosyVoice3 model root dir.")
-    parser.add_argument("--tts-model", default=COSYVOICE3_DEFAULT_MODEL, help="Model dir name under <tts-root>/ (or absolute dir).")
+    parser.add_argument("--tts", action="store_true", help="Enable TTS (LuxTTS).")
     parser.add_argument(
-        "--tts-mode",
-        choices=["zero_shot", "cross_lingual", "instruct"],
-        default="zero_shot",
-        help="Synthesis mode.",
+        "--tts-model",
+        default=LUX_TTS_DEFAULT_MODEL,
+        help="LuxTTS model ref (HF repo id or local directory).",
     )
-    parser.add_argument("--tts-device", choices=["auto", "cpu", "cuda", "metal"], default="auto", help="Device for inference.")
-    parser.add_argument("--tts-f16", action="store_true", help="Use FP16 precision (GPU only).")
+    parser.add_argument("--tts-device", choices=["auto", "cpu", "cuda", "mps", "metal"], default="auto", help="Device for inference.")
+    parser.add_argument("--tts-threads", type=int, default=LUX_TTS_DEFAULT_THREADS, help="CPU threads for LuxTTS.")
     parser.add_argument("--tts-prompt-wav", default="", help="Reference voice audio path (required when --tts is on).")
-    parser.add_argument("--tts-prompt-text", default="", help="Full prompt_text for zero_shot (prefix+transcript).")
-    parser.add_argument("--tts-prompt-transcript", default="", help="Transcript of prompt wav (appended to required prefix).")
-    parser.add_argument("--tts-instruct-text", default="", help="Instruction text for instruct mode.")
-    parser.add_argument("--tts-n-timesteps", type=int, default=10, help="Number of flow sampling steps.")
+    parser.add_argument(
+        "--tts-prompt-duration",
+        type=float,
+        default=LUX_TTS_DEFAULT_PROMPT_DURATION,
+        help="Seconds of prompt audio to encode for LuxTTS.",
+    )
+    parser.add_argument(
+        "--tts-prompt-rms",
+        type=float,
+        default=LUX_TTS_DEFAULT_PROMPT_RMS,
+        help="Target RMS for LuxTTS prompt encoding.",
+    )
+    parser.add_argument("--tts-num-steps", type=int, default=LUX_TTS_DEFAULT_NUM_STEPS, help="LuxTTS diffusion steps.")
+    parser.add_argument(
+        "--tts-guidance-scale",
+        type=float,
+        default=LUX_TTS_DEFAULT_GUIDANCE_SCALE,
+        help="LuxTTS guidance scale.",
+    )
+    parser.add_argument("--tts-t-shift", type=float, default=LUX_TTS_DEFAULT_T_SHIFT, help="LuxTTS t_shift.")
+    parser.add_argument("--tts-speed", type=float, default=LUX_TTS_DEFAULT_SPEED, help="LuxTTS playback speed.")
+    parser.add_argument("--tts-return-smooth", action="store_true", help="Use LuxTTS smooth output variant.")
 
     return parser
 
@@ -519,6 +562,7 @@ def run_cli(argv: list[str] | None = None) -> int:
     parser.add_argument("--audio-dir", default="tts_out", help="Directory for chunked wav outputs (relative to --workdir unless absolute).")
     parser.add_argument("--tts-out-dir", dest="audio_dir", help="Alias of --audio-dir (legacy).")
     parser.add_argument("--interrupt-policy", choices=["priority", "always", "never"], default="priority")
+    apply_config_defaults(parser, argv=argv, repo_root=Path(__file__).resolve().parents[1], profile="cli")
     args = parser.parse_args(argv)
     return _run(mode="cli", args=args)
 
@@ -536,6 +580,7 @@ def run_vtuber(argv: list[str] | None = None) -> int:
     parser.add_argument("--bilibili-exit-when-offline", action="store_true", help="Exit when room goes offline.")
     parser.add_argument("--bilibili-live-check-interval", type=float, default=10.0, help="Live status check interval seconds.")
     parser.add_argument("--interrupt-policy", choices=["priority", "always", "never"], default="priority")
+    apply_config_defaults(parser, argv=argv, repo_root=Path(__file__).resolve().parents[1], profile="vtuber")
     args = parser.parse_args(argv)
 
     if args.bilibili_room_id <= 0 and str(args.bilibili_room_url or "").strip():
@@ -582,35 +627,27 @@ def _run(*, mode: str, args: argparse.Namespace) -> int:
 
     tts_enabled = bool(args.tts)
     py_tts: PyTTS | None = None
-    computed_prompt_text = ""
-    computed_instruct_text = ""
     if tts_enabled:
         prompt_wav = str(args.tts_prompt_wav or "").strip()
         if not prompt_wav:
             print("tts> 失败：缺少 --tts-prompt-wav（参考音频）", file=sys.stderr)
             tts_enabled = False
         else:
-            engine = CosyVoice3TTS(
-                tts_root=args.tts_root,
+            engine = LuxTTS(
                 model=args.tts_model,
                 device=args.tts_device,
-                use_f16=bool(args.tts_f16),
+                threads=int(args.tts_threads),
             )
-            prompt_text = str(args.tts_prompt_text or "").strip()
-            if not prompt_text:
-                transcript = str(args.tts_prompt_transcript or "").strip()
-                prompt_text = COSYVOICE3_DEFAULT_PROMPT_PREFIX + transcript if transcript else COSYVOICE3_DEFAULT_PROMPT_PREFIX
-            instruct_text = str(args.tts_instruct_text or "").strip() or COSYVOICE3_DEFAULT_PROMPT_PREFIX
-            computed_prompt_text = prompt_text
-            computed_instruct_text = instruct_text
-
             py_tts = PyTTS(
                 engine=engine,
-                mode=str(args.tts_mode),
                 prompt_wav_path=prompt_wav,
-                prompt_text=prompt_text,
-                instruct_text=instruct_text,
-                n_timesteps=int(args.tts_n_timesteps),
+                prompt_duration=float(args.tts_prompt_duration),
+                prompt_rms=float(args.tts_prompt_rms),
+                num_steps=int(args.tts_num_steps),
+                guidance_scale=float(args.tts_guidance_scale),
+                t_shift=float(args.tts_t_shift),
+                speed=float(args.tts_speed),
+                return_smooth=bool(args.tts_return_smooth),
                 max_workers=1,
             )
 
@@ -673,11 +710,15 @@ def _run(*, mode: str, args: argparse.Namespace) -> int:
         },
         "interrupt_policy": str(getattr(args, "interrupt_policy", "priority")),
         "tts_enabled": bool(tts_enabled and py_tts is not None),
-        "tts_mode": str(args.tts_mode),
+        "tts_model": str(args.tts_model or ""),
         "tts_prompt_wav_path": str(args.tts_prompt_wav or "").strip(),
-        "tts_prompt_text": computed_prompt_text,
-        "tts_instruct_text": computed_instruct_text,
-        "tts_n_timesteps": int(args.tts_n_timesteps),
+        "tts_prompt_duration": float(args.tts_prompt_duration),
+        "tts_prompt_rms": float(args.tts_prompt_rms),
+        "tts_num_steps": int(args.tts_num_steps),
+        "tts_guidance_scale": float(args.tts_guidance_scale),
+        "tts_t_shift": float(args.tts_t_shift),
+        "tts_speed": float(args.tts_speed),
+        "tts_return_smooth": bool(args.tts_return_smooth),
         "subtitle_path": subtitle_path,
         "event_log_path": event_log_path,
         "audio_dir": audio_dir,

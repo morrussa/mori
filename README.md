@@ -34,25 +34,53 @@ pip install -r requirements.txt
 
 把 chat / embedding 两个 `.gguf` 放到 `model/`（目录已在 `.gitignore` 里）。
 
-## 安装 TTS（cosyvoice3）
+## 统一配置（推荐）
 
-TTS 的模型默认安装到 `model/tts/cosyvoice3/`（同样不进 git），并会构建 LuaJIT FFI 用的 native 模块：
+仓库根目录现在支持统一配置文件：`mori.config.json`。
+
+这些入口都会自动优先读取它：
+
+- `python3 main.py`
+- `python3 vtuber.py`
+- `python3 scripts/run_bili_vtuber_love2d.py`
+- `python3 scripts/run_bili_vtuber_inochi.py`
+
+也可以显式指定：
 
 ```bash
-bash mori_tts/scripts/install_cosyvoice3.sh --root model/tts/cosyvoice3
+python3 vtuber.py --config /path/to/mori.config.json
 ```
 
-如果编译报错提示缺少 `protoc`，安装 `protobuf-compiler`（或自行提供 `protoc`）。
+默认规则：
 
-如果你想启用 CUDA（需要本机有 CUDA 工具链/驱动），先用 `--cuda` 构建：
+- 如果当前目录或仓库根目录存在 `mori.config.json`，就会自动加载
+- 配置里的值会作为默认值使用，命令行显式传参仍然可以覆盖
+- 配置里的相对路径会按 `mori.config.json` 所在目录解析
+- `mori.config.json` 里已经按 `common / tts / cli / vtuber / love2d / inochi` 分组
+
+你可以直接编辑仓库里的 `mori.config.json`，然后用最短命令启动。
+
+## 安装 TTS（LuxTTS）
+
+当前 TTS 链路改成了 `LuxTTS` 的 Python 接入，不再依赖仓库内的 Candle/LuaJIT native 模块。
+
+在当前 venv 里安装：
 
 ```bash
-bash mori_tts/scripts/install_cosyvoice3.sh --cuda --root model/tts/cosyvoice3
+bash mori_tts/scripts/install_lux_tts.sh
 ```
+
+默认模型使用 Hugging Face 上的 `YatharthS/LuxTTS`，首次运行时会自动下载到本机缓存。
 
 ## 运行
 
-默认会从 `model/` 里挑一个 chat 和 embedding 模型；也可以显式指定：
+如果已经写好 `mori.config.json`，最简单就是：
+
+```bash
+python3 main.py
+```
+
+默认也会从 `model/` 里挑一个 chat 和 embedding 模型；也可以显式指定：
 
 ```bash
 python3 main.py \
@@ -64,20 +92,20 @@ python3 main.py \
 
 ```bash
 python3 main.py --tts \
-  --tts-root model/tts/cosyvoice3 \
-  --tts-model CosyVoice3-0.5B-Candle \
-  --tts-prompt-wav /path/to/prompt.wav \
-  --tts-prompt-transcript "（这里填 prompt.wav 的文字稿）"
+  --tts-model YatharthS/LuxTTS \
+  --tts-prompt-wav /path/to/prompt.wav
 ```
 
-使用 CUDA（前提：编译时启用了 `--cuda`）：
+如果你想调 LuxTTS 的生成速度/风格，可以加这些参数：
 
 ```bash
-python3 main.py --tts --tts-device cuda --tts-f16 \
-  --tts-root model/tts/cosyvoice3 \
-  --tts-model CosyVoice3-0.5B-Candle \
+python3 main.py --tts \
+  --tts-model YatharthS/LuxTTS \
   --tts-prompt-wav /path/to/prompt.wav \
-  --tts-prompt-transcript "（这里填 prompt.wav 的文字稿）"
+  --tts-num-steps 4 \
+  --tts-guidance-scale 3.0 \
+  --tts-t-shift 0.5 \
+  --tts-speed 1.0
 ```
 
 如果你的 llama.cpp 不在默认路径，设置其中之一：
@@ -89,22 +117,27 @@ python3 main.py --tts --tts-device cuda --tts-f16 \
 
 入口：`vtuber.py`
 
+如果已经写好 `mori.config.json`，最简单就是：
+
 ```bash
-python3 vtuber.py --tts --live-dir live \
-  --tts-root model/tts/cosyvoice3 \
-  --tts-model CosyVoice3-0.5B-Candle \
-  --tts-prompt-wav /path/to/prompt.wav \
-  --tts-prompt-transcript "（这里填 prompt.wav 的文字稿）"
+python3 vtuber.py
 ```
 
-如果你希望确认 TTS 确实在用 GPU，加上：
+```bash
+python3 vtuber.py --tts --live-dir live \
+  --tts-model YatharthS/LuxTTS \
+  --tts-prompt-wav /path/to/prompt.wav
+```
+
+LuxTTS 不是流式生成，但当前运行时会边收到 LLM 输出边分段提交，所以仍然能较快地产生分段 wav：
 
 ```bash
-python3 vtuber.py --tts --tts-device cuda --tts-f16 --live-dir live \
-  --tts-root model/tts/cosyvoice3 \
-  --tts-model CosyVoice3-0.5B-Candle \
+python3 vtuber.py --tts --live-dir live \
+  --tts-model YatharthS/LuxTTS \
   --tts-prompt-wav /path/to/prompt.wav \
-  --tts-prompt-transcript "（这里填 prompt.wav 的文字稿）"
+  --tts-num-steps 4 \
+  --tts-guidance-scale 3.0 \
+  --tts-t-shift 0.5
 ```
 
 它会持续写入：

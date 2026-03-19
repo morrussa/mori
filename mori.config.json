@@ -1,0 +1,57 @@
+{
+  "version": 1,
+  "common": {
+    "workdir": ".",
+    "llama_bin_dir": "",
+    "chat_model": "",
+    "embed_model": "",
+    "ctx_size": 8192,
+    "n_predict": 512,
+    "temp": 0.7,
+    "top_p": 0.9,
+    "system": ""
+  },
+  "tts": {
+    "enabled": true,
+    "model": "YatharthS/LuxTTS",
+    "device": "auto",
+    "threads": 4,
+    "prompt_wav": "mori_tts/prompt.wav",
+    "prompt_duration": 5.0,
+    "prompt_rms": 0.01,
+    "num_steps": 4,
+    "guidance_scale": 3.0,
+    "t_shift": 0.5,
+    "speed": 1.0,
+    "return_smooth": false
+  },
+  "cli": {
+    "audio_dir": "tts_out",
+    "interrupt_policy": "priority"
+  },
+  "vtuber": {
+    "live_dir": "live",
+    "subtitle_file": "subtitle.txt",
+    "event_log": "events.jsonl",
+    "bilibili_room_id": 1862085389,
+    "bilibili_room_url": "",
+    "bilibili_interval": 2.0,
+    "bilibili_catchup": 1,
+    "bilibili_exit_when_offline": false,
+    "bilibili_live_check_interval": 10.0,
+    "interrupt_policy": "priority"
+  },
+  "love2d": {
+    "tts": true,
+    "love_bin": "love",
+    "puppet": "model/inochi2d/puppets/aka/Aka.inx",
+    "mapping": "",
+    "mouse_look": "0",
+    "skip_prepare": false
+  },
+  "inochi": {
+    "inochi_root": "model/inochi2d",
+    "inochi_bin": "",
+    "inochi_x11": false
+  }
+}

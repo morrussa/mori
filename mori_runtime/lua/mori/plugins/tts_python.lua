@@ -1,7 +1,7 @@
 local protocol = require("mori.core.protocol")
 
 local M = {
-    id = "tts:cosyvoice3",
+    id = "tts:python",
     version = "0.1.0",
 }
 
@@ -28,4 +28,3 @@ function M.setup(bus, ctx)
 end
 
 return M
-
