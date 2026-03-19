@@ -66,8 +66,14 @@ def parse_args() -> argparse.Namespace:
     p.add_argument(
         "--memory-profile",
         choices=["capture", "default"],
-        default="capture",
-        help='Memory config profile. "capture" keeps current logic but removes bilibili guard blocking.',
+        default="default",
+        help='Guard/memory write profile. "capture" keeps current logic but removes live guard blocking.',
+    )
+    p.add_argument(
+        "--strategy-profile",
+        choices=["default", "live_room"],
+        default="default",
+        help='Thread-routing strategy profile. Default stays conservative; live_room must be enabled explicitly.',
     )
     p.add_argument("--max-streams", type=int, default=0, help="Override disentangle.max_streams (0 = keep config default).")
     p.add_argument(
@@ -446,6 +452,7 @@ class LiveMemoryHarness:
         lines = [
             'local config = require("module.config")',
             "config.reset()",
+            f'assert(config.apply_strategy_profile("{str(self.args.strategy_profile)}"))',
             "config.settings.topic.allow_llm_summary = false",
             'config.settings.guard.scope_strategy = "source_room"',
             "config.settings.guard.anchor_scope_prefix = true",
@@ -643,6 +650,7 @@ def main() -> int:
         "embed_model": str(args.embed_model),
         "llama_bin_dir": str(args.llama_bin_dir),
         "memory_profile": str(args.memory_profile),
+        "strategy_profile": str(args.strategy_profile),
         "assistant_mode": "empty_assistant_text",
         "files": {
             "raw_messages": str(raw_path),
