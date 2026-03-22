@@ -58,7 +58,12 @@ def main() -> None:
     import torch
     import safetensors
 
-    from zipvoice.bin.infer_zipvoice import VocosFbank, generate_sentence, get_vocoder
+    from zipvoice.bin.infer_zipvoice import (
+        VocosFbank,
+        _get_cached_prompt_context,
+        generate_sentence,
+        get_vocoder,
+    )
     from zipvoice.models.zipvoice import ZipVoice
     from zipvoice.tokenizer.tokenizer import build_tokenizer
     from zipvoice.utils.checkpoint import load_checkpoint
@@ -142,20 +147,47 @@ def main() -> None:
             _emit({"id": req_id, "ok": False, "error": f"invalid json: {e}"})
             continue
 
-        if str(req.get("cmd", "")).strip().lower() == "shutdown":
+        cmd = str(req.get("cmd", "")).strip().lower()
+        if cmd == "shutdown":
             _emit({"id": req_id, "ok": True, "shutdown": True})
             return
 
         try:
-            out_wav = Path(str(req["out_wav"])).expanduser().resolve()
-            out_wav.parent.mkdir(parents=True, exist_ok=True)
             tokenizer = str(req["tokenizer"])
             lang = str(req["lang"])
             prompt_wav = str(Path(str(req["prompt_wav"])).expanduser().resolve())
             prompt_text = str(req["prompt_text"])
-            text = str(req["text"])
-
             tk = get_cached_tokenizer(tokenizer, lang)
+            if cmd == "prewarm":
+                ctx = _get_cached_prompt_context(
+                    prompt_text=prompt_text,
+                    prompt_wav=prompt_wav,
+                    tokenizer=tk,
+                    feature_extractor=feature_extractor,
+                    sampling_rate=sampling_rate,
+                    target_rms=0.1,
+                    feat_scale=0.1,
+                    device=device,
+                )
+                prompt_features = ctx["prompt_features"]
+                prompt_tokens = ctx["prompt_tokens"]
+                _emit(
+                    {
+                        "id": req_id,
+                        "ok": True,
+                        "prewarmed": True,
+                        "prompt_duration": float(ctx["prompt_duration"]),
+                        "prompt_frames": int(prompt_features.shape[1]),
+                        "prompt_feature_dim": int(prompt_features.shape[2]),
+                        "prompt_feature_bytes": int(prompt_features.numel() * prompt_features.element_size()),
+                        "prompt_tokens": len(prompt_tokens[0]) if prompt_tokens else 0,
+                    }
+                )
+                continue
+
+            out_wav = Path(str(req["out_wav"])).expanduser().resolve()
+            out_wav.parent.mkdir(parents=True, exist_ok=True)
+            text = str(req["text"])
             generate_sentence(
                 save_path=str(out_wav),
                 prompt_text=prompt_text,

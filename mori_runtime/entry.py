@@ -17,6 +17,8 @@ from mori_runtime.tts_backends import (
     DEFAULT_TTS_BACKEND,
     DEFAULT_ZIPVOICE_CHECKPOINT_NAME,
     DEFAULT_ZIPVOICE_JA_LANG,
+    DEFAULT_ZIPVOICE_JA_PROMPT_TEXT,
+    DEFAULT_ZIPVOICE_JA_PROMPT_WAV,
     DEFAULT_ZIPVOICE_JA_TOKENIZER,
     DEFAULT_ZIPVOICE_LANG_DETECTOR,
     DEFAULT_ZIPVOICE_LANG_MIN_CONF,
@@ -28,6 +30,8 @@ from mori_runtime.tts_backends import (
     DEFAULT_ZIPVOICE_REMOVE_LONG_SIL,
     DEFAULT_ZIPVOICE_REPO,
     DEFAULT_ZIPVOICE_ZH_LANG,
+    DEFAULT_ZIPVOICE_ZH_PROMPT_TEXT,
+    DEFAULT_ZIPVOICE_ZH_PROMPT_WAV,
     DEFAULT_ZIPVOICE_ZH_TOKENIZER,
     build_tts_engine,
 )
@@ -654,6 +658,16 @@ def _build_common_parser(*, prog: str) -> argparse.ArgumentParser:
         help="lang passed to infer_zipvoice for Chinese routing.",
     )
     parser.add_argument(
+        "--tts-zipvoice-zh-prompt-text",
+        default=DEFAULT_ZIPVOICE_ZH_PROMPT_TEXT,
+        help="Fixed prompt text for Chinese routing. Overrides shared prompt manifest for zh.",
+    )
+    parser.add_argument(
+        "--tts-zipvoice-zh-prompt-wav",
+        default=DEFAULT_ZIPVOICE_ZH_PROMPT_WAV,
+        help="Fixed prompt wav for Chinese routing. Overrides shared prompt manifest for zh.",
+    )
+    parser.add_argument(
         "--tts-zipvoice-ja-tokenizer",
         default=DEFAULT_ZIPVOICE_JA_TOKENIZER,
         help="Tokenizer for Japanese routing in backend=zipvoice.",
@@ -662,6 +676,16 @@ def _build_common_parser(*, prog: str) -> argparse.ArgumentParser:
         "--tts-zipvoice-ja-lang",
         default=DEFAULT_ZIPVOICE_JA_LANG,
         help="lang passed to infer_zipvoice for Japanese routing.",
+    )
+    parser.add_argument(
+        "--tts-zipvoice-ja-prompt-text",
+        default=DEFAULT_ZIPVOICE_JA_PROMPT_TEXT,
+        help="Fixed prompt text for Japanese routing. Overrides shared prompt manifest for ja.",
+    )
+    parser.add_argument(
+        "--tts-zipvoice-ja-prompt-wav",
+        default=DEFAULT_ZIPVOICE_JA_PROMPT_WAV,
+        help="Fixed prompt wav for Japanese routing. Overrides shared prompt manifest for ja.",
     )
     parser.add_argument(
         "--tts-zipvoice-remove-long-sil",
@@ -777,8 +801,20 @@ def _run(*, mode: str, args: argparse.Namespace) -> int:
         backend_name = str(args.tts_backend or "").strip().lower()
         prompt_wav = str(args.tts_prompt_wav or "").strip()
         prompt_manifest = str(getattr(args, "tts_zipvoice_prompt_manifest", "") or "").strip()
-        if backend_name == "zipvoice" and not prompt_manifest:
-            print("tts> 失败：backend=zipvoice 必须提供 --tts-zipvoice-prompt-manifest", file=sys.stderr)
+        zh_fixed_prompt_ready = bool(
+            str(getattr(args, "tts_zipvoice_zh_prompt_text", "") or "").strip()
+            and str(getattr(args, "tts_zipvoice_zh_prompt_wav", "") or "").strip()
+        )
+        ja_fixed_prompt_ready = bool(
+            str(getattr(args, "tts_zipvoice_ja_prompt_text", "") or "").strip()
+            and str(getattr(args, "tts_zipvoice_ja_prompt_wav", "") or "").strip()
+        )
+        zipvoice_has_prompt_source = bool(prompt_manifest or zh_fixed_prompt_ready or ja_fixed_prompt_ready)
+        if backend_name == "zipvoice" and not zipvoice_has_prompt_source:
+            print(
+                "tts> 失败：backend=zipvoice 需要 --tts-zipvoice-prompt-manifest 或成对的 zh/ja fixed prompt",
+                file=sys.stderr,
+            )
             tts_enabled = False
         elif backend_name != "zipvoice" and not prompt_wav:
             print("tts> 失败：缺少 --tts-prompt-wav（参考音频）", file=sys.stderr)
@@ -795,8 +831,12 @@ def _run(*, mode: str, args: argparse.Namespace) -> int:
                 tts_zipvoice_checkpoint_name=args.tts_zipvoice_checkpoint_name,
                 tts_zipvoice_zh_tokenizer=args.tts_zipvoice_zh_tokenizer,
                 tts_zipvoice_zh_lang=args.tts_zipvoice_zh_lang,
+                tts_zipvoice_zh_prompt_text=str(args.tts_zipvoice_zh_prompt_text),
+                tts_zipvoice_zh_prompt_wav=args.tts_zipvoice_zh_prompt_wav,
                 tts_zipvoice_ja_tokenizer=args.tts_zipvoice_ja_tokenizer,
                 tts_zipvoice_ja_lang=args.tts_zipvoice_ja_lang,
+                tts_zipvoice_ja_prompt_text=str(args.tts_zipvoice_ja_prompt_text),
+                tts_zipvoice_ja_prompt_wav=args.tts_zipvoice_ja_prompt_wav,
                 tts_zipvoice_remove_long_sil=bool(args.tts_zipvoice_remove_long_sil),
                 tts_zipvoice_num_thread=int(args.tts_zipvoice_num_thread),
                 tts_zipvoice_lang_detector=str(args.tts_zipvoice_lang_detector),
@@ -807,6 +847,13 @@ def _run(*, mode: str, args: argparse.Namespace) -> int:
             backend_name = str(getattr(engine, "backend_name", str(args.tts_backend)))
             if prompt_wav:
                 print(f"tts> backend={backend_name} prompt={prompt_wav}")
+            elif zh_fixed_prompt_ready or ja_fixed_prompt_ready:
+                fixed_parts: list[str] = []
+                if zh_fixed_prompt_ready:
+                    fixed_parts.append(f"zh={Path(str(args.tts_zipvoice_zh_prompt_wav)).expanduser().resolve()}")
+                if ja_fixed_prompt_ready:
+                    fixed_parts.append(f"ja={Path(str(args.tts_zipvoice_ja_prompt_wav)).expanduser().resolve()}")
+                print(f"tts> backend={backend_name} prompt=<fixed {' '.join(fixed_parts)}>")
             else:
                 print(f"tts> backend={backend_name} prompt=<from-manifest>")
             py_tts = PyTTS(
@@ -900,8 +947,12 @@ def _run(*, mode: str, args: argparse.Namespace) -> int:
         "tts_zipvoice_checkpoint_name": str(args.tts_zipvoice_checkpoint_name or ""),
         "tts_zipvoice_zh_tokenizer": str(args.tts_zipvoice_zh_tokenizer or ""),
         "tts_zipvoice_zh_lang": str(args.tts_zipvoice_zh_lang or ""),
+        "tts_zipvoice_zh_prompt_text": str(args.tts_zipvoice_zh_prompt_text or ""),
+        "tts_zipvoice_zh_prompt_wav": str(args.tts_zipvoice_zh_prompt_wav or ""),
         "tts_zipvoice_ja_tokenizer": str(args.tts_zipvoice_ja_tokenizer or ""),
         "tts_zipvoice_ja_lang": str(args.tts_zipvoice_ja_lang or ""),
+        "tts_zipvoice_ja_prompt_text": str(args.tts_zipvoice_ja_prompt_text or ""),
+        "tts_zipvoice_ja_prompt_wav": str(args.tts_zipvoice_ja_prompt_wav or ""),
         "tts_zipvoice_lang_detector": str(args.tts_zipvoice_lang_detector or ""),
         "tts_zipvoice_lang_min_conf": float(args.tts_zipvoice_lang_min_conf),
         "tts_zipvoice_prompt_manifest": str(args.tts_zipvoice_prompt_manifest or ""),

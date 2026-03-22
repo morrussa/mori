@@ -24,6 +24,10 @@ DEFAULT_ZIPVOICE_ZH_TOKENIZER = "emilia"
 DEFAULT_ZIPVOICE_ZH_LANG = "en-us"
 DEFAULT_ZIPVOICE_JA_TOKENIZER = "openjtalk"
 DEFAULT_ZIPVOICE_JA_LANG = "ja"
+DEFAULT_ZIPVOICE_ZH_PROMPT_TEXT = ""
+DEFAULT_ZIPVOICE_ZH_PROMPT_WAV = ""
+DEFAULT_ZIPVOICE_JA_PROMPT_TEXT = ""
+DEFAULT_ZIPVOICE_JA_PROMPT_WAV = ""
 DEFAULT_ZIPVOICE_REMOVE_LONG_SIL = False
 DEFAULT_ZIPVOICE_NUM_THREAD = 1
 DEFAULT_ZIPVOICE_LANG_DETECTOR = "auto"
@@ -111,7 +115,44 @@ class _PromptEntry:
     text: str
     wav_path: Path
     route: Literal["", "zh", "ja"]
-    manifest_path: Path
+    manifest_path: Path | None
+    source: Literal["manifest", "config"]
+
+
+def _resolve_prompt_audio_path(value: str | Path) -> Path:
+    path = Path(str(value or "")).expanduser()
+    if not path.is_absolute():
+        path = (Path.cwd() / path).resolve()
+    else:
+        path = path.resolve()
+    return path
+
+
+def _build_fixed_prompt_entry(
+    *,
+    route: Literal["zh", "ja"],
+    prompt_text: str,
+    prompt_wav_path: str | Path,
+) -> _PromptEntry | None:
+    text = str(prompt_text or "").strip()
+    wav_raw = str(prompt_wav_path or "").strip()
+    if not text and not wav_raw:
+        return None
+    if not text or not wav_raw:
+        raise ValueError(
+            f"ZipVoice fixed {route} prompt requires both prompt_text and prompt_wav."
+        )
+    wav_path = _resolve_prompt_audio_path(wav_raw)
+    if not wav_path.is_file():
+        raise FileNotFoundError(f"ZipVoice fixed {route} prompt wav not found: {wav_path}")
+    return _PromptEntry(
+        prompt_id=f"fixed_{route}_{wav_path.stem}",
+        text=text,
+        wav_path=wav_path,
+        route=route,
+        manifest_path=None,
+        source="config",
+    )
 
 
 def _read_prompt_entries_from_manifest(manifest: Path) -> list[_PromptEntry]:
@@ -167,6 +208,7 @@ def _read_prompt_entries_from_manifest(manifest: Path) -> list[_PromptEntry]:
                 wav_path=prompt_path,
                 route=prompt_route,
                 manifest_path=manifest,
+                source="manifest",
             )
         )
     return items
@@ -404,6 +446,10 @@ class ZipVoiceTTS:
         zh_lang: str = DEFAULT_ZIPVOICE_ZH_LANG,
         ja_tokenizer: str = DEFAULT_ZIPVOICE_JA_TOKENIZER,
         ja_lang: str = DEFAULT_ZIPVOICE_JA_LANG,
+        zh_prompt_text: str = DEFAULT_ZIPVOICE_ZH_PROMPT_TEXT,
+        zh_prompt_wav: str | Path = DEFAULT_ZIPVOICE_ZH_PROMPT_WAV,
+        ja_prompt_text: str = DEFAULT_ZIPVOICE_JA_PROMPT_TEXT,
+        ja_prompt_wav: str | Path = DEFAULT_ZIPVOICE_JA_PROMPT_WAV,
         remove_long_sil: bool = DEFAULT_ZIPVOICE_REMOVE_LONG_SIL,
         num_thread: int = DEFAULT_ZIPVOICE_NUM_THREAD,
         lang_detector: str = DEFAULT_ZIPVOICE_LANG_DETECTOR,
@@ -419,6 +465,18 @@ class ZipVoiceTTS:
         self._zh_lang = str(zh_lang or DEFAULT_ZIPVOICE_ZH_LANG).strip()
         self._ja_tokenizer = str(ja_tokenizer or DEFAULT_ZIPVOICE_JA_TOKENIZER).strip()
         self._ja_lang = str(ja_lang or DEFAULT_ZIPVOICE_JA_LANG).strip()
+        self._fixed_route_prompts: dict[Literal["zh", "ja"], _PromptEntry | None] = {
+            "zh": _build_fixed_prompt_entry(
+                route="zh",
+                prompt_text=zh_prompt_text,
+                prompt_wav_path=zh_prompt_wav,
+            ),
+            "ja": _build_fixed_prompt_entry(
+                route="ja",
+                prompt_text=ja_prompt_text,
+                prompt_wav_path=ja_prompt_wav,
+            ),
+        }
         self._remove_long_sil = bool(remove_long_sil)
         self._num_thread = max(1, int(num_thread))
         self._lang_detector = ZipVoiceLangDetector(mode=lang_detector, min_conf=lang_min_conf)
@@ -435,6 +493,7 @@ class ZipVoiceTTS:
         self._worker_req_id = 0
         self._worker_proc: subprocess.Popen[str] | None = None
         self._worker_script = (Path(__file__).resolve().parent / "zipvoice_worker.py").resolve()
+        self._prompt_cache_stats: dict[Literal["zh", "ja"], dict[str, Any]] = {}
 
         if not self._python_bin.is_file():
             raise FileNotFoundError(f"ZipVoice python not found: {self._python_bin}")
@@ -448,20 +507,19 @@ class ZipVoiceTTS:
                 raise FileNotFoundError(f"ZipVoice model file missing: {f}")
         if self._prompt_manifest and not self._prompt_pool:
             raise ValueError(f"ZipVoice prompt manifest has no usable entries: {self._prompt_manifest}")
-        if not self._prompt_pool:
-            raise ValueError("ZipVoice requires tts_zipvoice_prompt_manifest.")
-        if not self._candidate_prompt_pool(self._prompt_pool, "zh"):
+        if not self._has_prompt_for_route("zh"):
             raise ValueError(
-                "ZipVoice prompt manifest must contain zh or untagged entries for the zh route."
+                "ZipVoice requires a zh fixed prompt or zh-capable entries in tts_zipvoice_prompt_manifest."
             )
-        if not self._candidate_prompt_pool(self._prompt_pool, "ja"):
+        if not self._has_prompt_for_route("ja"):
             raise ValueError(
-                "ZipVoice prompt manifest must contain ja or untagged entries for the ja route."
+                "ZipVoice requires a ja fixed prompt or ja-capable entries in tts_zipvoice_prompt_manifest."
             )
         if not self._worker_script.is_file():
             raise FileNotFoundError(f"ZipVoice worker script not found: {self._worker_script}")
 
         self._start_worker()
+        self._prewarm_route_prompt_cache()
 
     @property
     def backend_name(self) -> str:
@@ -507,6 +565,31 @@ class ZipVoiceTTS:
         ready = self._read_worker_message()
         if not ready.get("ready", False):
             raise RuntimeError(f"ZipVoice worker failed to start: {ready}")
+
+    def _write_worker_request(self, req: dict[str, Any]) -> dict[str, Any]:
+        proc = self._worker_proc
+        if proc is None or proc.stdin is None:
+            self._start_worker()
+            proc = self._worker_proc
+        if proc is None or proc.stdin is None:
+            raise RuntimeError("ZipVoice worker could not be started")
+
+        self._worker_req_id += 1
+        req_id = str(self._worker_req_id)
+        msg = {"id": req_id, **req}
+
+        try:
+            proc.stdin.write(json.dumps(msg, ensure_ascii=False) + "\n")
+            proc.stdin.flush()
+        except Exception as e:
+            self._stop_worker()
+            raise RuntimeError(f"ZipVoice worker write failed: {e}")
+
+        while True:
+            resp = self._read_worker_message()
+            if str(resp.get("id", "")) != req_id:
+                continue
+            return resp
 
     def _stop_worker(self) -> None:
         proc = self._worker_proc
@@ -554,17 +637,7 @@ class ZipVoiceTTS:
         t_shift: float,
         speed: float,
     ) -> None:
-        proc = self._worker_proc
-        if proc is None or proc.stdin is None:
-            self._start_worker()
-            proc = self._worker_proc
-        if proc is None or proc.stdin is None:
-            raise RuntimeError("ZipVoice worker could not be started")
-
-        self._worker_req_id += 1
-        req_id = str(self._worker_req_id)
         req = {
-            "id": req_id,
             "tokenizer": tokenizer,
             "lang": lang,
             "prompt_wav": str(prompt_wav),
@@ -580,28 +653,76 @@ class ZipVoiceTTS:
             "max_duration": 40.0,
             "remove_long_sil": bool(self._remove_long_sil),
         }
+        msg = self._write_worker_request(req)
+        if bool(msg.get("ok", False)):
+            return
+        err = str(msg.get("error", "unknown error"))
+        raise RuntimeError(
+            "ZipVoice inference failed.\n"
+            f"tokenizer={tokenizer} lang={lang}\n"
+            f"prompt_wav={prompt_wav}\n"
+            f"out={out_wav}\n"
+            f"{err}"
+        )
 
-        try:
-            proc.stdin.write(json.dumps(req, ensure_ascii=False) + "\n")
-            proc.stdin.flush()
-        except Exception as e:
-            self._stop_worker()
-            raise RuntimeError(f"ZipVoice worker write failed: {e}")
-
-        while True:
-            msg = self._read_worker_message()
-            if str(msg.get("id", "")) != req_id:
-                continue
-            if bool(msg.get("ok", False)):
-                return
+    def _prewarm_prompt_entry(
+        self,
+        *,
+        route_key: Literal["zh", "ja"],
+        tokenizer: str,
+        lang: str,
+        prompt_wav: Path,
+        prompt_text: str,
+    ) -> None:
+        msg = self._write_worker_request(
+            {
+                "cmd": "prewarm",
+                "route": route_key,
+                "tokenizer": tokenizer,
+                "lang": lang,
+                "prompt_wav": str(prompt_wav),
+                "prompt_text": prompt_text,
+            }
+        )
+        if not bool(msg.get("ok", False)):
             err = str(msg.get("error", "unknown error"))
             raise RuntimeError(
-                "ZipVoice inference failed.\n"
-                f"tokenizer={tokenizer} lang={lang}\n"
+                "ZipVoice prompt prewarm failed.\n"
+                f"route={route_key} tokenizer={tokenizer} lang={lang}\n"
                 f"prompt_wav={prompt_wav}\n"
-                f"out={out_wav}\n"
                 f"{err}"
             )
+        self._prompt_cache_stats[route_key] = {
+            "prompt_duration": float(msg.get("prompt_duration", 0.0) or 0.0),
+            "prompt_frames": int(msg.get("prompt_frames", 0) or 0),
+            "prompt_feature_dim": int(msg.get("prompt_feature_dim", 0) or 0),
+            "prompt_feature_bytes": int(msg.get("prompt_feature_bytes", 0) or 0),
+            "prompt_tokens": int(msg.get("prompt_tokens", 0) or 0),
+        }
+
+    def _prewarmable_prompt_for_route(self, route_key: Literal["zh", "ja"]) -> _PromptEntry | None:
+        fixed = self._fixed_route_prompts.get(route_key)
+        if fixed is not None:
+            return fixed
+        pool = self._candidate_prompt_pool(self._prompt_pool, route_key)
+        if len(pool) == 1:
+            return pool[0]
+        return None
+
+    def _prewarm_route_prompt_cache(self) -> None:
+        for route_key in ("zh", "ja"):
+            entry = self._prewarmable_prompt_for_route(route_key)
+            if entry is None:
+                continue
+            route = self._route_by_key(route_key)
+            with self._worker_lock:
+                self._prewarm_prompt_entry(
+                    route_key=route_key,
+                    tokenizer=route.tokenizer,
+                    lang=route.lang,
+                    prompt_wav=entry.wav_path,
+                    prompt_text=entry.text,
+                )
 
     def _route_by_key(self, key: str) -> _ZipVoiceRoute:
         if key == "ja":
@@ -645,6 +766,14 @@ class ZipVoiceTTS:
             return []
         return [entry for entry in pool if entry.route in {"", route_key}]
 
+    def _fixed_prompt_for_route(self, route_key: Literal["zh", "ja"]) -> _PromptEntry | None:
+        return self._fixed_route_prompts.get(route_key)
+
+    def _has_prompt_for_route(self, route_key: Literal["zh", "ja"]) -> bool:
+        if self._fixed_prompt_for_route(route_key) is not None:
+            return True
+        return bool(self._candidate_prompt_pool(self._prompt_pool, route_key))
+
     def _choose_prompt_entry(
         self,
         *,
@@ -681,11 +810,21 @@ class ZipVoiceTTS:
         route_key: Literal["zh", "ja"],
         prompt_key: str = "",
     ) -> _PromptEntry | None:
+        fixed = self._fixed_prompt_for_route(route_key)
+        if fixed is not None:
+            return fixed
         return self._choose_prompt_entry(
             pool=self._candidate_prompt_pool(self._prompt_pool, route_key),
             pool_name=route_key,
             prompt_key=prompt_key,
         )
+
+    def _prompt_pool_name_for_route(self, route_key: Literal["zh", "ja"], prompt_entry: _PromptEntry) -> str:
+        if prompt_entry.source == "config":
+            return "fixed"
+        if len(self._candidate_prompt_pool(self._prompt_pool, route_key)) == 1:
+            return "singleton"
+        return "shared"
 
     def synthesize_to_wav(
         self,
@@ -746,8 +885,8 @@ class ZipVoiceTTS:
             "prompt_id": prompt_entry.prompt_id,
             "prompt_route": prompt_entry.route or route.key,
             "prompt_wav_path": str(prompt_wav),
-            "prompt_manifest_path": str(prompt_entry.manifest_path),
-            "prompt_pool_name": "shared",
+            "prompt_manifest_path": str(prompt_entry.manifest_path or ""),
+            "prompt_pool_name": self._prompt_pool_name_for_route(route.key, prompt_entry),
         }
 
 
@@ -765,6 +904,10 @@ def build_tts_engine(
     tts_zipvoice_zh_lang: str,
     tts_zipvoice_ja_tokenizer: str,
     tts_zipvoice_ja_lang: str,
+    tts_zipvoice_zh_prompt_text: str,
+    tts_zipvoice_zh_prompt_wav: str | Path,
+    tts_zipvoice_ja_prompt_text: str,
+    tts_zipvoice_ja_prompt_wav: str | Path,
     tts_zipvoice_remove_long_sil: bool,
     tts_zipvoice_num_thread: int,
     tts_zipvoice_lang_detector: str,
@@ -783,6 +926,10 @@ def build_tts_engine(
             zh_lang=tts_zipvoice_zh_lang,
             ja_tokenizer=tts_zipvoice_ja_tokenizer,
             ja_lang=tts_zipvoice_ja_lang,
+            zh_prompt_text=tts_zipvoice_zh_prompt_text,
+            zh_prompt_wav=tts_zipvoice_zh_prompt_wav,
+            ja_prompt_text=tts_zipvoice_ja_prompt_text,
+            ja_prompt_wav=tts_zipvoice_ja_prompt_wav,
             remove_long_sil=tts_zipvoice_remove_long_sil,
             num_thread=tts_zipvoice_num_thread,
             lang_detector=tts_zipvoice_lang_detector,

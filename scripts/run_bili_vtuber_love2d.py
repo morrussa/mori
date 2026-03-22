@@ -117,8 +117,12 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p.add_argument("--tts-zipvoice-checkpoint-name", default="", help="Optional override for vtuber.py --tts-zipvoice-checkpoint-name.")
     p.add_argument("--tts-zipvoice-zh-tokenizer", default="", help="Optional override for vtuber.py --tts-zipvoice-zh-tokenizer.")
     p.add_argument("--tts-zipvoice-zh-lang", default="", help="Optional override for vtuber.py --tts-zipvoice-zh-lang.")
+    p.add_argument("--tts-zipvoice-zh-prompt-text", default="", help="Optional override for vtuber.py --tts-zipvoice-zh-prompt-text.")
+    p.add_argument("--tts-zipvoice-zh-prompt-wav", default="", help="Optional override for vtuber.py --tts-zipvoice-zh-prompt-wav.")
     p.add_argument("--tts-zipvoice-ja-tokenizer", default="", help="Optional override for vtuber.py --tts-zipvoice-ja-tokenizer.")
     p.add_argument("--tts-zipvoice-ja-lang", default="", help="Optional override for vtuber.py --tts-zipvoice-ja-lang.")
+    p.add_argument("--tts-zipvoice-ja-prompt-text", default="", help="Optional override for vtuber.py --tts-zipvoice-ja-prompt-text.")
+    p.add_argument("--tts-zipvoice-ja-prompt-wav", default="", help="Optional override for vtuber.py --tts-zipvoice-ja-prompt-wav.")
     p.add_argument("--tts-zipvoice-remove-long-sil", action="store_true", help="Passed to vtuber.py --tts-zipvoice-remove-long-sil.")
     p.add_argument("--tts-zipvoice-num-thread", type=int, default=0, help="Optional override for vtuber.py --tts-zipvoice-num-thread.")
     p.add_argument("--tts-zipvoice-prompt-manifest", default="", help="Optional override for vtuber.py --tts-zipvoice-prompt-manifest.")
@@ -276,8 +280,18 @@ def main() -> int:
         prompt_wav = str(args.tts_prompt_wav or "").strip()
         backend_hint = str(getattr(args, "tts_backend", "") or "").strip().lower()
         prompt_manifest = _resolve_comma_path_list(str(args.tts_zipvoice_prompt_manifest or ""))
-        if backend_hint == "zipvoice" and not prompt_manifest:
-            raise ValueError("backend=zipvoice requires --tts-zipvoice-prompt-manifest.")
+        zh_fixed_prompt_ready = bool(
+            str(args.tts_zipvoice_zh_prompt_text or "").strip()
+            and str(args.tts_zipvoice_zh_prompt_wav or "").strip()
+        )
+        ja_fixed_prompt_ready = bool(
+            str(args.tts_zipvoice_ja_prompt_text or "").strip()
+            and str(args.tts_zipvoice_ja_prompt_wav or "").strip()
+        )
+        if backend_hint == "zipvoice" and not (prompt_manifest or zh_fixed_prompt_ready or ja_fixed_prompt_ready):
+            raise ValueError(
+                "backend=zipvoice requires --tts-zipvoice-prompt-manifest or fixed zh/ja prompt pairs."
+            )
         if backend_hint != "zipvoice" and not prompt_wav:
             raise ValueError("Missing required arg: --tts-prompt-wav")
         if prompt_wav and backend_hint != "zipvoice":
@@ -308,10 +322,18 @@ def main() -> int:
             vtuber_cmd += ["--tts-zipvoice-zh-tokenizer", str(args.tts_zipvoice_zh_tokenizer)]
         if str(args.tts_zipvoice_zh_lang or "").strip():
             vtuber_cmd += ["--tts-zipvoice-zh-lang", str(args.tts_zipvoice_zh_lang)]
+        if str(args.tts_zipvoice_zh_prompt_text or "").strip():
+            vtuber_cmd += ["--tts-zipvoice-zh-prompt-text", str(args.tts_zipvoice_zh_prompt_text)]
+        if str(args.tts_zipvoice_zh_prompt_wav or "").strip():
+            vtuber_cmd += ["--tts-zipvoice-zh-prompt-wav", str(Path(args.tts_zipvoice_zh_prompt_wav).expanduser().resolve())]
         if str(args.tts_zipvoice_ja_tokenizer or "").strip():
             vtuber_cmd += ["--tts-zipvoice-ja-tokenizer", str(args.tts_zipvoice_ja_tokenizer)]
         if str(args.tts_zipvoice_ja_lang or "").strip():
             vtuber_cmd += ["--tts-zipvoice-ja-lang", str(args.tts_zipvoice_ja_lang)]
+        if str(args.tts_zipvoice_ja_prompt_text or "").strip():
+            vtuber_cmd += ["--tts-zipvoice-ja-prompt-text", str(args.tts_zipvoice_ja_prompt_text)]
+        if str(args.tts_zipvoice_ja_prompt_wav or "").strip():
+            vtuber_cmd += ["--tts-zipvoice-ja-prompt-wav", str(Path(args.tts_zipvoice_ja_prompt_wav).expanduser().resolve())]
         if bool(args.tts_zipvoice_remove_long_sil):
             vtuber_cmd.append("--tts-zipvoice-remove-long-sil")
         if int(args.tts_zipvoice_num_thread or 0) > 0:
