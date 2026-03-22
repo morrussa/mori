@@ -29,8 +29,6 @@
     "zipvoice_repo": "/home/morusa/dataset/train/ZipVoice",
     "zipvoice_model_dir": "/home/morusa/AI/mori/model/zipvoice_zhja_iter3000_avg2",
     "zipvoice_checkpoint_name": "iter-3000-avg-2.pt",
-    "zipvoice_zh_prompt_text": "にんにくとサムジャンとごま油。",
-    "zipvoice_ja_prompt_text": "にんにくとサムジャンとごま油。",
     "zipvoice_zh_tokenizer": "emilia",
     "zipvoice_zh_lang": "en-us",
     "zipvoice_ja_tokenizer": "openjtalk",
@@ -39,7 +37,9 @@
     "zipvoice_num_thread": 1,
     "zipvoice_lang_detector": "heuristic",
     "zipvoice_lang_min_conf": 0.6,
-    "zipvoice_prompt_manifest": "mori_tts/prompts/afw/afw_relaxed_train.tsv,mori_tts/prompts/afw/afw_relaxed_dev.tsv",
+    "zipvoice_prompt_manifest": "",
+    "zipvoice_zh_prompt_manifest": "/home/morusa/dataset/train/prompt_mix_experiments/cute_prompt_filter/cute_passed_prompt_manifest.tsv",
+    "zipvoice_ja_prompt_manifest": "mori_tts/prompts/afw/afw_relaxed_train.tsv,mori_tts/prompts/afw/afw_relaxed_dev.tsv",
     "zipvoice_prompt_policy": "intent_hash"
   },
   "cli": {

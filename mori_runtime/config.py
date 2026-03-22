@@ -57,8 +57,6 @@ _TTS_KEY_MAP = {
     "zipvoice_repo": "tts_zipvoice_repo",
     "zipvoice_model_dir": "tts_zipvoice_model_dir",
     "zipvoice_checkpoint_name": "tts_zipvoice_checkpoint_name",
-    "zipvoice_zh_prompt_text": "tts_zipvoice_zh_prompt_text",
-    "zipvoice_ja_prompt_text": "tts_zipvoice_ja_prompt_text",
     "zipvoice_zh_tokenizer": "tts_zipvoice_zh_tokenizer",
     "zipvoice_zh_lang": "tts_zipvoice_zh_lang",
     "zipvoice_ja_tokenizer": "tts_zipvoice_ja_tokenizer",
@@ -68,6 +66,8 @@ _TTS_KEY_MAP = {
     "zipvoice_lang_detector": "tts_zipvoice_lang_detector",
     "zipvoice_lang_min_conf": "tts_zipvoice_lang_min_conf",
     "zipvoice_prompt_manifest": "tts_zipvoice_prompt_manifest",
+    "zipvoice_zh_prompt_manifest": "tts_zipvoice_zh_prompt_manifest",
+    "zipvoice_ja_prompt_manifest": "tts_zipvoice_ja_prompt_manifest",
     "zipvoice_prompt_policy": "tts_zipvoice_prompt_policy",
 }
 
@@ -96,9 +96,17 @@ _PATH_DEFAULT_KEYS = {
     "tts_zipvoice_repo",
     "tts_zipvoice_model_dir",
     "tts_zipvoice_prompt_manifest",
+    "tts_zipvoice_zh_prompt_manifest",
+    "tts_zipvoice_ja_prompt_manifest",
     "puppet",
     "mapping",
     "inochi_root",
+}
+
+_PATH_LIST_KEYS = {
+    "tts_zipvoice_prompt_manifest",
+    "tts_zipvoice_zh_prompt_manifest",
+    "tts_zipvoice_ja_prompt_manifest",
 }
 
 
@@ -116,6 +124,13 @@ def _pick_keys(source: dict[str, Any], allowed: set[str]) -> dict[str, Any]:
 
 def _resolve_config_relative_paths(defaults: dict[str, Any], *, config_dir: Path) -> dict[str, Any]:
     resolved = dict(defaults)
+
+    def _resolve_one_path(text: str) -> str:
+        path = Path(text).expanduser()
+        if path.is_absolute():
+            return str(path.resolve())
+        return str((config_dir / path).resolve())
+
     for key in _PATH_DEFAULT_KEYS:
         value = resolved.get(key)
         if not isinstance(value, str):
@@ -123,11 +138,13 @@ def _resolve_config_relative_paths(defaults: dict[str, Any], *, config_dir: Path
         text = value.strip()
         if not text:
             continue
-        path = Path(text).expanduser()
-        if path.is_absolute():
-            resolved[key] = str(path.resolve())
+        if key in _PATH_LIST_KEYS:
+            items = [x.strip() for x in text.split(",") if x.strip()]
+            if not items:
+                continue
+            resolved[key] = ",".join(_resolve_one_path(x) for x in items)
             continue
-        resolved[key] = str((config_dir / path).resolve())
+        resolved[key] = _resolve_one_path(text)
     return resolved
 
 
