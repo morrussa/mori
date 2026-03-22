@@ -123,16 +123,6 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p.add_argument("--tts-zipvoice-num-thread", type=int, default=0, help="Optional override for vtuber.py --tts-zipvoice-num-thread.")
     p.add_argument("--tts-zipvoice-prompt-manifest", default="", help="Optional override for vtuber.py --tts-zipvoice-prompt-manifest.")
     p.add_argument(
-        "--tts-zipvoice-zh-prompt-manifest",
-        default="",
-        help="Optional override for vtuber.py --tts-zipvoice-zh-prompt-manifest.",
-    )
-    p.add_argument(
-        "--tts-zipvoice-ja-prompt-manifest",
-        default="",
-        help="Optional override for vtuber.py --tts-zipvoice-ja-prompt-manifest.",
-    )
-    p.add_argument(
         "--tts-zipvoice-prompt-policy",
         choices=["", "intent_hash", "round_robin", "random"],
         default="",
@@ -285,16 +275,9 @@ def main() -> int:
 
         prompt_wav = str(args.tts_prompt_wav or "").strip()
         backend_hint = str(getattr(args, "tts_backend", "") or "").strip().lower()
-        has_any_manifest = any(
-            str(v or "").strip()
-            for v in [
-                getattr(args, "tts_zipvoice_prompt_manifest", ""),
-                getattr(args, "tts_zipvoice_zh_prompt_manifest", ""),
-                getattr(args, "tts_zipvoice_ja_prompt_manifest", ""),
-            ]
-        )
-        if backend_hint == "zipvoice" and not has_any_manifest:
-            raise ValueError("backend=zipvoice requires prompt manifest (shared/zh/ja).")
+        prompt_manifest = _resolve_comma_path_list(str(args.tts_zipvoice_prompt_manifest or ""))
+        if backend_hint == "zipvoice" and not prompt_manifest:
+            raise ValueError("backend=zipvoice requires --tts-zipvoice-prompt-manifest.")
         if backend_hint != "zipvoice" and not prompt_wav:
             raise ValueError("Missing required arg: --tts-prompt-wav")
         if prompt_wav and backend_hint != "zipvoice":
@@ -333,15 +316,8 @@ def main() -> int:
             vtuber_cmd.append("--tts-zipvoice-remove-long-sil")
         if int(args.tts_zipvoice_num_thread or 0) > 0:
             vtuber_cmd += ["--tts-zipvoice-num-thread", str(int(args.tts_zipvoice_num_thread))]
-        prompt_manifest = _resolve_comma_path_list(str(args.tts_zipvoice_prompt_manifest or ""))
         if prompt_manifest:
             vtuber_cmd += ["--tts-zipvoice-prompt-manifest", prompt_manifest]
-        zh_prompt_manifest = _resolve_comma_path_list(str(args.tts_zipvoice_zh_prompt_manifest or ""))
-        if zh_prompt_manifest:
-            vtuber_cmd += ["--tts-zipvoice-zh-prompt-manifest", zh_prompt_manifest]
-        ja_prompt_manifest = _resolve_comma_path_list(str(args.tts_zipvoice_ja_prompt_manifest or ""))
-        if ja_prompt_manifest:
-            vtuber_cmd += ["--tts-zipvoice-ja-prompt-manifest", ja_prompt_manifest]
         if str(args.tts_zipvoice_prompt_policy or "").strip():
             vtuber_cmd += ["--tts-zipvoice-prompt-policy", str(args.tts_zipvoice_prompt_policy)]
         if str(args.tts_zipvoice_lang_detector or "").strip():

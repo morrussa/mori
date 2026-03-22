@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import csv
 from dataclasses import dataclass
 import hashlib
 import json
@@ -28,12 +29,15 @@ DEFAULT_ZIPVOICE_NUM_THREAD = 1
 DEFAULT_ZIPVOICE_LANG_DETECTOR = "auto"
 DEFAULT_ZIPVOICE_LANG_MIN_CONF = 0.60
 DEFAULT_ZIPVOICE_PROMPT_MANIFEST = ""
-DEFAULT_ZIPVOICE_ZH_PROMPT_MANIFEST = ""
-DEFAULT_ZIPVOICE_JA_PROMPT_MANIFEST = ""
 DEFAULT_ZIPVOICE_PROMPT_POLICY = "intent_hash"
 
 _ZIPVOICE_LANG_DETECTOR_CHOICES = {"auto", "heuristic", "lingua"}
 _ZIPVOICE_PROMPT_POLICY_CHOICES = {"intent_hash", "round_robin", "random"}
+_PROMPT_MANIFEST_TEXT_KEYS = {"text", "prompt_text", "transcript"}
+_PROMPT_MANIFEST_WAV_KEYS = {"wav_path", "path", "audio_path", "audio", "wav", "prompt_wav", "wav_or_mp3_path"}
+_PROMPT_MANIFEST_ID_KEYS = {"id", "uniq_id", "prompt_id", "key", "name"}
+_PROMPT_MANIFEST_ROUTE_KEYS = {"lang", "route", "language"}
+_PROMPT_MANIFEST_ENABLED_KEYS = {"enabled", "enable", "active", "use", "keep"}
 
 
 def _split_path_list(value: str) -> list[str]:
@@ -43,33 +47,144 @@ def _split_path_list(value: str) -> list[str]:
     return [x.strip() for x in s.split(",") if x.strip()]
 
 
-def _load_prompt_pool_from_manifests(manifest_paths: str | Path) -> list[tuple[Path, str]]:
-    items: list[tuple[Path, str]] = []
-    seen: set[str] = set()
+def _bool_text(value: str, default: bool = True) -> bool:
+    s = str(value or "").strip().lower()
+    if not s:
+        return default
+    if s in {"1", "true", "yes", "y", "on"}:
+        return True
+    if s in {"0", "false", "no", "n", "off"}:
+        return False
+    return default
+
+
+def _sniff_manifest_dialect(lines: list[str]) -> csv.Dialect:
+    sample = "\n".join(lines[:8])
+    try:
+        return csv.Sniffer().sniff(sample, delimiters="\t,")
+    except Exception:
+        base = lines[0] if lines else ""
+        delimiter = "\t" if "\t" in base else ","
+
+        class _FallbackDialect(csv.excel):
+            pass
+
+        _FallbackDialect.delimiter = delimiter
+        return _FallbackDialect
+
+
+def _normalize_header_cell(value: str) -> str:
+    return str(value or "").strip().lower().lstrip("\ufeff")
+
+
+def _find_first_header(headers: dict[str, int], keys: set[str]) -> int:
+    for key in keys:
+        idx = headers.get(key)
+        if idx is not None:
+            return int(idx)
+    return -1
+
+
+def _has_prompt_manifest_header(row: list[str]) -> bool:
+    headers = {_normalize_header_cell(cell) for cell in row}
+    return bool(headers & _PROMPT_MANIFEST_TEXT_KEYS) and bool(headers & _PROMPT_MANIFEST_WAV_KEYS)
+
+
+def _row_value(row: list[str], idx: int, default: str = "") -> str:
+    if idx < 0 or idx >= len(row):
+        return default
+    return str(row[idx] or "").strip()
+
+
+def _normalize_prompt_route(value: str) -> Literal["", "zh", "ja"]:
+    lang = _normalize_lang_tag(value)
+    if lang == "ja":
+        return "ja"
+    if lang in {"zh", "en"}:
+        return "zh"
+    return ""
+
+
+@dataclass(frozen=True)
+class _PromptEntry:
+    prompt_id: str
+    text: str
+    wav_path: Path
+    route: Literal["", "zh", "ja"]
+    manifest_path: Path
+
+
+def _read_prompt_entries_from_manifest(manifest: Path) -> list[_PromptEntry]:
+    lines = [
+        line
+        for line in manifest.read_text(encoding="utf-8-sig").splitlines()
+        if line.strip() and not line.lstrip().startswith("#")
+    ]
+    if not lines:
+        return []
+
+    reader = csv.reader(lines, dialect=_sniff_manifest_dialect(lines))
+    rows = [list(row) for row in reader if row]
+    if not rows:
+        return []
+
+    items: list[_PromptEntry] = []
+    header_map: dict[str, int] = {}
+    start_idx = 0
+    if _has_prompt_manifest_header(rows[0]):
+        header_map = {_normalize_header_cell(cell): idx for idx, cell in enumerate(rows[0])}
+        start_idx = 1
+
+    for row in rows[start_idx:]:
+        if not any(str(cell or "").strip() for cell in row):
+            continue
+        if header_map:
+            prompt_id = _row_value(row, _find_first_header(header_map, _PROMPT_MANIFEST_ID_KEYS))
+            prompt_text = _row_value(row, _find_first_header(header_map, _PROMPT_MANIFEST_TEXT_KEYS))
+            prompt_path_raw = _row_value(row, _find_first_header(header_map, _PROMPT_MANIFEST_WAV_KEYS))
+            prompt_route = _normalize_prompt_route(_row_value(row, _find_first_header(header_map, _PROMPT_MANIFEST_ROUTE_KEYS)))
+            enabled = _bool_text(_row_value(row, _find_first_header(header_map, _PROMPT_MANIFEST_ENABLED_KEYS)), default=True)
+        else:
+            prompt_id = _row_value(row, 0)
+            prompt_text = _row_value(row, 1)
+            prompt_path_raw = _row_value(row, 2)
+            prompt_route = _normalize_prompt_route(_row_value(row, 3))
+            enabled = True
+
+        if not enabled or not prompt_text or not prompt_path_raw:
+            continue
+        prompt_path = Path(prompt_path_raw).expanduser()
+        if not prompt_path.is_absolute():
+            prompt_path = (manifest.parent / prompt_path).resolve()
+        else:
+            prompt_path = prompt_path.resolve()
+        if not prompt_path.is_file():
+            continue
+        items.append(
+            _PromptEntry(
+                prompt_id=prompt_id or prompt_path.stem,
+                text=prompt_text,
+                wav_path=prompt_path,
+                route=prompt_route,
+                manifest_path=manifest,
+            )
+        )
+    return items
+
+
+def _load_prompt_pool_from_manifests(manifest_paths: str | Path) -> list[_PromptEntry]:
+    items: list[_PromptEntry] = []
+    seen: set[tuple[str, str]] = set()
     for raw in _split_path_list(str(manifest_paths or "")):
         manifest = Path(raw).expanduser().resolve()
         if not manifest.is_file():
             raise FileNotFoundError(f"ZipVoice prompt manifest not found: {manifest}")
-        for line in manifest.read_text(encoding="utf-8").splitlines():
-            s = line.strip()
-            if not s or s.startswith("#"):
-                continue
-            parts = s.split("\t")
-            if len(parts) < 3:
-                continue
-            prompt_text = str(parts[1] or "").strip()
-            prompt_path = Path(str(parts[2] or "").strip()).expanduser()
-            if not prompt_path.is_absolute():
-                prompt_path = (manifest.parent / prompt_path).resolve()
-            else:
-                prompt_path = prompt_path.resolve()
-            if not prompt_text or not prompt_path.is_file():
-                continue
-            k = str(prompt_path)
+        for entry in _read_prompt_entries_from_manifest(manifest):
+            k = (str(entry.wav_path), str(entry.route))
             if k in seen:
                 continue
             seen.add(k)
-            items.append((prompt_path, prompt_text))
+            items.append(entry)
     return items
 
 
@@ -294,8 +409,6 @@ class ZipVoiceTTS:
         lang_detector: str = DEFAULT_ZIPVOICE_LANG_DETECTOR,
         lang_min_conf: float = DEFAULT_ZIPVOICE_LANG_MIN_CONF,
         prompt_manifest: str | Path = DEFAULT_ZIPVOICE_PROMPT_MANIFEST,
-        zh_prompt_manifest: str | Path = DEFAULT_ZIPVOICE_ZH_PROMPT_MANIFEST,
-        ja_prompt_manifest: str | Path = DEFAULT_ZIPVOICE_JA_PROMPT_MANIFEST,
         prompt_policy: str = DEFAULT_ZIPVOICE_PROMPT_POLICY,
     ) -> None:
         self._python_bin = Path(python_bin).expanduser().resolve()
@@ -310,18 +423,14 @@ class ZipVoiceTTS:
         self._num_thread = max(1, int(num_thread))
         self._lang_detector = ZipVoiceLangDetector(mode=lang_detector, min_conf=lang_min_conf)
         self._prompt_manifest = str(prompt_manifest or "").strip()
-        self._zh_prompt_manifest = str(zh_prompt_manifest or "").strip()
-        self._ja_prompt_manifest = str(ja_prompt_manifest or "").strip()
         self._prompt_policy = str(prompt_policy or DEFAULT_ZIPVOICE_PROMPT_POLICY).strip().lower()
         if self._prompt_policy not in _ZIPVOICE_PROMPT_POLICY_CHOICES:
             raise ValueError(
                 f"Unsupported zipvoice prompt policy: {prompt_policy!r}. Expected one of {sorted(_ZIPVOICE_PROMPT_POLICY_CHOICES)}."
             )
         self._prompt_pool = _load_prompt_pool_from_manifests(self._prompt_manifest)
-        self._zh_prompt_pool = _load_prompt_pool_from_manifests(self._zh_prompt_manifest)
-        self._ja_prompt_pool = _load_prompt_pool_from_manifests(self._ja_prompt_manifest)
         self._pool_lock = threading.Lock()
-        self._pool_rr_idx = {"shared": 0, "zh": 0, "ja": 0}
+        self._pool_rr_idx = {"zh": 0, "ja": 0}
         self._worker_lock = threading.Lock()
         self._worker_req_id = 0
         self._worker_proc: subprocess.Popen[str] | None = None
@@ -339,17 +448,15 @@ class ZipVoiceTTS:
                 raise FileNotFoundError(f"ZipVoice model file missing: {f}")
         if self._prompt_manifest and not self._prompt_pool:
             raise ValueError(f"ZipVoice prompt manifest has no usable entries: {self._prompt_manifest}")
-        if self._zh_prompt_manifest and not self._zh_prompt_pool:
-            raise ValueError(f"ZipVoice zh prompt manifest has no usable entries: {self._zh_prompt_manifest}")
-        if self._ja_prompt_manifest and not self._ja_prompt_pool:
-            raise ValueError(f"ZipVoice ja prompt manifest has no usable entries: {self._ja_prompt_manifest}")
-        if not (self._zh_prompt_pool or self._prompt_pool):
+        if not self._prompt_pool:
+            raise ValueError("ZipVoice requires tts_zipvoice_prompt_manifest.")
+        if not self._candidate_prompt_pool(self._prompt_pool, "zh"):
             raise ValueError(
-                "ZipVoice zh route requires prompt manifests. Set tts_zipvoice_zh_prompt_manifest or tts_zipvoice_prompt_manifest."
+                "ZipVoice prompt manifest must contain zh or untagged entries for the zh route."
             )
-        if not (self._ja_prompt_pool or self._prompt_pool):
+        if not self._candidate_prompt_pool(self._prompt_pool, "ja"):
             raise ValueError(
-                "ZipVoice ja route requires prompt manifests. Set tts_zipvoice_ja_prompt_manifest or tts_zipvoice_prompt_manifest."
+                "ZipVoice prompt manifest must contain ja or untagged entries for the ja route."
             )
         if not self._worker_script.is_file():
             raise FileNotFoundError(f"ZipVoice worker script not found: {self._worker_script}")
@@ -532,13 +639,19 @@ class ZipVoiceTTS:
             return _kana_to_romaji(s)
         return s
 
+    @staticmethod
+    def _candidate_prompt_pool(pool: list[_PromptEntry], route_key: Literal["zh", "ja"]) -> list[_PromptEntry]:
+        if not pool:
+            return []
+        return [entry for entry in pool if entry.route in {"", route_key}]
+
     def _choose_prompt_entry(
         self,
         *,
-        pool: list[tuple[Path, str]],
-        pool_name: Literal["shared", "zh", "ja"],
+        pool: list[_PromptEntry],
+        pool_name: Literal["zh", "ja"],
         prompt_key: str = "",
-    ) -> tuple[Path, str] | None:
+    ) -> _PromptEntry | None:
         if not pool:
             return None
         n = len(pool)
@@ -567,14 +680,12 @@ class ZipVoiceTTS:
         *,
         route_key: Literal["zh", "ja"],
         prompt_key: str = "",
-    ) -> tuple[Path, str] | None:
-        if route_key == "ja" and self._ja_prompt_pool:
-            return self._choose_prompt_entry(pool=self._ja_prompt_pool, pool_name="ja", prompt_key=prompt_key)
-        if route_key == "zh" and self._zh_prompt_pool:
-            return self._choose_prompt_entry(pool=self._zh_prompt_pool, pool_name="zh", prompt_key=prompt_key)
-        if self._prompt_pool:
-            return self._choose_prompt_entry(pool=self._prompt_pool, pool_name="shared", prompt_key=prompt_key)
-        return None
+    ) -> _PromptEntry | None:
+        return self._choose_prompt_entry(
+            pool=self._candidate_prompt_pool(self._prompt_pool, route_key),
+            pool_name=route_key,
+            prompt_key=prompt_key,
+        )
 
     def synthesize_to_wav(
         self,
@@ -591,7 +702,7 @@ class ZipVoiceTTS:
         return_smooth: bool = False,
         lang_hint: str = "",
         prompt_key: str = "",
-    ) -> Path:
+    ) -> Path | dict[str, Any]:
         del prompt_wav_path, prompt_duration, prompt_rms, return_smooth
         out_wav = Path(out_wav_path).expanduser().resolve()
         out_wav.parent.mkdir(parents=True, exist_ok=True)
@@ -604,9 +715,11 @@ class ZipVoiceTTS:
         if chosen is None:
             raise ValueError(
                 f"ZipVoice prompt manifest is missing for route={route.key}. "
-                "Configure tts_zipvoice_(zh|ja)_prompt_manifest or shared tts_zipvoice_prompt_manifest."
+                "Add matching lang/route entries to tts_zipvoice_prompt_manifest."
             )
-        prompt_wav, prompt_text = chosen
+        prompt_entry = chosen
+        prompt_wav = prompt_entry.wav_path
+        prompt_text = prompt_entry.text
         if not prompt_wav.is_file():
             raise FileNotFoundError(f"ZipVoice prompt wav not found: {prompt_wav}")
 
@@ -625,7 +738,17 @@ class ZipVoiceTTS:
             )
         if not out_wav.is_file():
             raise FileNotFoundError(f"ZipVoice did not generate wav file: {out_wav}")
-        return out_wav
+        return {
+            "wav_path": str(out_wav),
+            "tts_route": route.key,
+            "tts_tokenizer": tokenizer,
+            "tts_lang": lang,
+            "prompt_id": prompt_entry.prompt_id,
+            "prompt_route": prompt_entry.route or route.key,
+            "prompt_wav_path": str(prompt_wav),
+            "prompt_manifest_path": str(prompt_entry.manifest_path),
+            "prompt_pool_name": "shared",
+        }
 
 
 def build_tts_engine(
@@ -647,8 +770,6 @@ def build_tts_engine(
     tts_zipvoice_lang_detector: str,
     tts_zipvoice_lang_min_conf: float,
     tts_zipvoice_prompt_manifest: str | Path,
-    tts_zipvoice_zh_prompt_manifest: str | Path,
-    tts_zipvoice_ja_prompt_manifest: str | Path,
     tts_zipvoice_prompt_policy: str,
 ) -> Any:
     b = str(backend or DEFAULT_TTS_BACKEND).strip().lower()
@@ -667,8 +788,6 @@ def build_tts_engine(
             lang_detector=tts_zipvoice_lang_detector,
             lang_min_conf=tts_zipvoice_lang_min_conf,
             prompt_manifest=tts_zipvoice_prompt_manifest,
-            zh_prompt_manifest=tts_zipvoice_zh_prompt_manifest,
-            ja_prompt_manifest=tts_zipvoice_ja_prompt_manifest,
             prompt_policy=tts_zipvoice_prompt_policy,
         )
 

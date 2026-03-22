@@ -66,8 +66,6 @@ _TTS_KEY_MAP = {
     "zipvoice_lang_detector": "tts_zipvoice_lang_detector",
     "zipvoice_lang_min_conf": "tts_zipvoice_lang_min_conf",
     "zipvoice_prompt_manifest": "tts_zipvoice_prompt_manifest",
-    "zipvoice_zh_prompt_manifest": "tts_zipvoice_zh_prompt_manifest",
-    "zipvoice_ja_prompt_manifest": "tts_zipvoice_ja_prompt_manifest",
     "zipvoice_prompt_policy": "tts_zipvoice_prompt_policy",
 }
 
@@ -96,8 +94,6 @@ _PATH_DEFAULT_KEYS = {
     "tts_zipvoice_repo",
     "tts_zipvoice_model_dir",
     "tts_zipvoice_prompt_manifest",
-    "tts_zipvoice_zh_prompt_manifest",
-    "tts_zipvoice_ja_prompt_manifest",
     "puppet",
     "mapping",
     "inochi_root",
@@ -105,8 +101,6 @@ _PATH_DEFAULT_KEYS = {
 
 _PATH_LIST_KEYS = {
     "tts_zipvoice_prompt_manifest",
-    "tts_zipvoice_zh_prompt_manifest",
-    "tts_zipvoice_ja_prompt_manifest",
 }
 
 

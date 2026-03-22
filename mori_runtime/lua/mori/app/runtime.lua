@@ -239,6 +239,14 @@ local function drain_tts(bus, ctx, cfg, canceled_intents)
                     error = tostring(r.error or ""),
                     source = tostring(r.source or ""),
                     nickname = tostring(r.nickname or ""),
+                    tts_route = tostring(r.tts_route or ""),
+                    tts_tokenizer = tostring(r.tts_tokenizer or ""),
+                    tts_lang = tostring(r.tts_lang or ""),
+                    prompt_id = tostring(r.prompt_id or ""),
+                    prompt_route = tostring(r.prompt_route or ""),
+                    prompt_wav_path = tostring(r.prompt_wav_path or ""),
+                    prompt_manifest_path = tostring(r.prompt_manifest_path or ""),
+                    prompt_pool_name = tostring(r.prompt_pool_name or ""),
                 })
                 if cfg.print_to_stdout == true then
                     local seg_text = trim(tostring(r.text or ""))
