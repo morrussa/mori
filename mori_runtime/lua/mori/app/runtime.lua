@@ -132,7 +132,7 @@ local function should_interrupt(cfg, active_intent, pending)
             tp = p
         end
     end
-    return tp >= ap
+    return tp > ap
 end
 
 local function make_segment_path(cfg, turn, segment_idx)
@@ -164,6 +164,61 @@ local function drain_inbox(ctx, pending, max_items)
     return count
 end
 
+local function compact_pending_bilibili(pending)
+    if #pending <= 1 then
+        return 0
+    end
+    local latest_idx = nil
+    local latest_time = nil
+    local bilibili_count = 0
+    for idx, item in ipairs(pending) do
+        if tostring(item.source or "") == "bilibili" then
+            bilibili_count = bilibili_count + 1
+            local t = tonumber(item.enqueued_at or 0) or 0
+            if latest_idx == nil or latest_time == nil or t >= latest_time then
+                latest_idx = idx
+                latest_time = t
+            end
+        end
+    end
+    if bilibili_count <= 1 or latest_idx == nil then
+        return 0
+    end
+
+    local kept = {}
+    local dropped = 0
+    for idx, item in ipairs(pending) do
+        if tostring(item.source or "") == "bilibili" and idx ~= latest_idx then
+            dropped = dropped + 1
+        else
+            kept[#kept + 1] = item
+        end
+    end
+    for i = #pending, 1, -1 do
+        pending[i] = nil
+    end
+    for i, item in ipairs(kept) do
+        pending[i] = item
+    end
+    return dropped
+end
+
+local function wait_for_inbox(ctx, timeout_s)
+    if not ctx.py_inbox then
+        return nil
+    end
+    local ok, ev = pcall(function()
+        if ctx.py_inbox.get_timeout ~= nil then
+            return ctx.py_inbox:get_timeout(timeout_s or 0.1)
+        end
+        return ctx.py_inbox:get()
+    end)
+    if not ok or not is_record_like(ev) then
+        return nil
+    end
+    return ev
+end
+
 local function drain_tts(bus, ctx, cfg, canceled_intents)
     local results = bus:call(protocol.events.TTS_DRAIN, {}) or {}
     for r in iter_sequence_like(results) do
@@ -185,6 +240,20 @@ local function drain_tts(bus, ctx, cfg, canceled_intents)
                     source = tostring(r.source or ""),
                     nickname = tostring(r.nickname or ""),
                 })
+                if cfg.print_to_stdout == true then
+                    local seg_text = trim(tostring(r.text or ""))
+                    if #seg_text > 40 then
+                        seg_text = seg_text:sub(1, 40) .. "..."
+                    end
+                    bus:emit(protocol.events.OUTPUT_PRINT, {
+                        text = string.format(
+                            "tts> done turn=%d seg=%d text=%s",
+                            tonumber(r.turn or 0) or 0,
+                            tonumber(r.segment_idx or 0) or 0,
+                            seg_text
+                        ),
+                    })
+                end
             end
         end
     end
@@ -482,21 +551,35 @@ function M.run(config, ctx)
     local pending = {}
     local turn = detect_next_turn()
     local running = true
+    local canceled_intents = ctx._canceled_intents
+    if not canceled_intents then
+        canceled_intents = {}
+        ctx._canceled_intents = canceled_intents
+    end
 
     bus:emit(protocol.events.OUTPUT_PRINT, { text = "Mori 已启动。输入 /exit 退出。" })
 
     while running do
+        drain_tts(bus, ctx, config, canceled_intents)
+
         -- Block if nothing pending.
         if #pending == 0 and ctx.py_inbox then
-            local ok, ev = pcall(function()
-                return ctx.py_inbox:get()
-            end)
-            if ok and is_record_like(ev) then
+            local ev = wait_for_inbox(ctx, 0.1)
+            if is_record_like(ev) then
                 ev.enqueued_at = ev.enqueued_at or now(ctx)
                 pending[#pending + 1] = ev
             end
         else
             drain_inbox(ctx, pending, 32)
+        end
+
+        if config.bilibili_enabled == true then
+            local dropped = compact_pending_bilibili(pending)
+            if dropped > 0 and config.print_to_stdout == true then
+                bus:emit(protocol.events.OUTPUT_PRINT, {
+                    text = string.format("queue> skipped %d stale bilibili messages; keeping latest", dropped),
+                })
+            end
         end
 
         local next_intent = pick_next(pending)
@@ -538,11 +621,6 @@ function M.run(config, ctx)
             else
                 next_intent.turn = turn
                 next_intent.intent_id = tostring(next_intent.intent_id or ("intent-" .. tostring(turn)))
-                local canceled_intents = ctx._canceled_intents
-                if not canceled_intents then
-                    canceled_intents = {}
-                    ctx._canceled_intents = canceled_intents
-                end
                 local ok_ingested = run_intent(bus, ctx, config, next_intent, pending, canceled_intents)
                 if ok_ingested then
                     turn = turn + 1

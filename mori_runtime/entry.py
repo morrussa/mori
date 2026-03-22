@@ -13,6 +13,22 @@ from typing import Any, Callable
 from mori_llm.llama_cpp_cli import pick_default_chat_model, pick_default_embed_model, resolve_llama_cpp_bin_dir
 from mori_llm.pipeline import MoriPipeline
 from mori_runtime.config import DEFAULT_CONFIG_NAME, apply_config_defaults
+from mori_runtime.tts_backends import (
+    DEFAULT_TTS_BACKEND,
+    DEFAULT_ZIPVOICE_CHECKPOINT_NAME,
+    DEFAULT_ZIPVOICE_JA_LANG,
+    DEFAULT_ZIPVOICE_JA_PROMPT_TEXT,
+    DEFAULT_ZIPVOICE_JA_TOKENIZER,
+    DEFAULT_ZIPVOICE_MODEL_DIR,
+    DEFAULT_ZIPVOICE_NUM_THREAD,
+    DEFAULT_ZIPVOICE_PYTHON_BIN,
+    DEFAULT_ZIPVOICE_REMOVE_LONG_SIL,
+    DEFAULT_ZIPVOICE_REPO,
+    DEFAULT_ZIPVOICE_ZH_LANG,
+    DEFAULT_ZIPVOICE_ZH_PROMPT_TEXT,
+    DEFAULT_ZIPVOICE_ZH_TOKENIZER,
+    build_tts_engine,
+)
 from mori_tts.lux_tts import (
     LUX_TTS_DEFAULT_GUIDANCE_SCALE,
     LUX_TTS_DEFAULT_MODEL,
@@ -22,7 +38,6 @@ from mori_tts.lux_tts import (
     LUX_TTS_DEFAULT_SPEED,
     LUX_TTS_DEFAULT_T_SHIFT,
     LUX_TTS_DEFAULT_THREADS,
-    LuxTTS,
 )
 
 
@@ -84,6 +99,12 @@ class PyInbox:
 
     def get(self) -> _LuaBridgeMap:
         return self._q.get()
+
+    def get_timeout(self, timeout_s: float = 0.1) -> _LuaBridgeMap | None:
+        try:
+            return self._q.get(timeout=max(0.0, float(timeout_s)))
+        except queue.Empty:
+            return None
 
     def drain_nowait(self, max_items: int = 32) -> list[_LuaBridgeMap]:
         out: list[_LuaBridgeMap] = []
@@ -173,7 +194,7 @@ class PyTTS:
     def __init__(
         self,
         *,
-        engine: LuxTTS,
+        engine: Any,
         prompt_wav_path: str,
         prompt_duration: float,
         prompt_rms: float,
@@ -238,6 +259,7 @@ class PyTTS:
         return_smooth = bool(
             self._get(payload, "return_smooth", self._default_return_smooth) or self._default_return_smooth
         )
+        lang_hint = str(self._get(payload, "tts_lang", self._get(payload, "lang", "")) or "")
 
         job_id = f"{intent_id}:{segment_idx}:{time.time():.6f}:{random.randint(1000,9999)}"
         created_at = time.time()
@@ -254,7 +276,7 @@ class PyTTS:
         )
 
         def _run() -> str:
-            self._engine.synthesize_to_wav(
+            kwargs = dict(
                 text=text,
                 out_wav_path=job.wav_path,
                 prompt_wav_path=prompt_wav_path,
@@ -266,6 +288,13 @@ class PyTTS:
                 speed=speed,
                 return_smooth=return_smooth,
             )
+            if lang_hint:
+                kwargs["lang_hint"] = lang_hint
+            try:
+                self._engine.synthesize_to_wav(**kwargs)
+            except TypeError:
+                kwargs.pop("lang_hint", None)
+                self._engine.synthesize_to_wav(**kwargs)
             return job.wav_path
 
         fut = self._executor.submit(_run)
@@ -522,37 +551,110 @@ def _build_common_parser(*, prog: str) -> argparse.ArgumentParser:
     parser.add_argument("--top-p", type=float, default=0.9, help="top_p.")
     parser.add_argument("--system", default=_default_system_prompt(), help="Base system prompt.")
 
-    parser.add_argument("--tts", action="store_true", help="Enable TTS (LuxTTS).")
+    parser.add_argument("--tts", action="store_true", help="Enable TTS backend.")
+    parser.add_argument(
+        "--tts-backend",
+        choices=["lux", "zipvoice"],
+        default=DEFAULT_TTS_BACKEND,
+        help="TTS backend. lux=legacy LuxTTS, zipvoice=explicit tokenizer router.",
+    )
     parser.add_argument(
         "--tts-model",
         default=LUX_TTS_DEFAULT_MODEL,
-        help="LuxTTS model ref (HF repo id or local directory).",
+        help="Model ref for backend=lux (HF repo id or local directory).",
     )
-    parser.add_argument("--tts-device", choices=["auto", "cpu", "cuda", "mps", "metal"], default="auto", help="Device for inference.")
-    parser.add_argument("--tts-threads", type=int, default=LUX_TTS_DEFAULT_THREADS, help="CPU threads for LuxTTS.")
+    parser.add_argument(
+        "--tts-device",
+        choices=["auto", "cpu", "cuda", "mps", "metal"],
+        default="auto",
+        help="Device for backend=lux.",
+    )
+    parser.add_argument("--tts-threads", type=int, default=LUX_TTS_DEFAULT_THREADS, help="CPU threads for backend=lux.")
     parser.add_argument("--tts-prompt-wav", default="", help="Reference voice audio path (required when --tts is on).")
     parser.add_argument(
         "--tts-prompt-duration",
         type=float,
         default=LUX_TTS_DEFAULT_PROMPT_DURATION,
-        help="Seconds of prompt audio to encode for LuxTTS.",
+        help="Seconds of prompt audio to encode for backend=lux.",
     )
     parser.add_argument(
         "--tts-prompt-rms",
         type=float,
         default=LUX_TTS_DEFAULT_PROMPT_RMS,
-        help="Target RMS for LuxTTS prompt encoding.",
+        help="Target RMS for backend=lux prompt encoding.",
     )
-    parser.add_argument("--tts-num-steps", type=int, default=LUX_TTS_DEFAULT_NUM_STEPS, help="LuxTTS diffusion steps.")
+    parser.add_argument("--tts-num-steps", type=int, default=LUX_TTS_DEFAULT_NUM_STEPS, help="Sampling steps.")
     parser.add_argument(
         "--tts-guidance-scale",
         type=float,
         default=LUX_TTS_DEFAULT_GUIDANCE_SCALE,
-        help="LuxTTS guidance scale.",
+        help="Guidance scale.",
     )
-    parser.add_argument("--tts-t-shift", type=float, default=LUX_TTS_DEFAULT_T_SHIFT, help="LuxTTS t_shift.")
-    parser.add_argument("--tts-speed", type=float, default=LUX_TTS_DEFAULT_SPEED, help="LuxTTS playback speed.")
-    parser.add_argument("--tts-return-smooth", action="store_true", help="Use LuxTTS smooth output variant.")
+    parser.add_argument("--tts-t-shift", type=float, default=LUX_TTS_DEFAULT_T_SHIFT, help="t_shift.")
+    parser.add_argument("--tts-speed", type=float, default=LUX_TTS_DEFAULT_SPEED, help="Playback speed.")
+    parser.add_argument("--tts-return-smooth", action="store_true", help="Use backend=lux smooth output variant.")
+    parser.add_argument(
+        "--tts-zipvoice-python-bin",
+        default=DEFAULT_ZIPVOICE_PYTHON_BIN,
+        help="Python executable for backend=zipvoice.",
+    )
+    parser.add_argument(
+        "--tts-zipvoice-repo",
+        default=DEFAULT_ZIPVOICE_REPO,
+        help="ZipVoice repo root for backend=zipvoice.",
+    )
+    parser.add_argument(
+        "--tts-zipvoice-model-dir",
+        default=DEFAULT_ZIPVOICE_MODEL_DIR,
+        help="Model directory for backend=zipvoice.",
+    )
+    parser.add_argument(
+        "--tts-zipvoice-checkpoint-name",
+        default=DEFAULT_ZIPVOICE_CHECKPOINT_NAME,
+        help="Checkpoint filename for backend=zipvoice.",
+    )
+    parser.add_argument(
+        "--tts-zipvoice-zh-prompt-text",
+        default=DEFAULT_ZIPVOICE_ZH_PROMPT_TEXT,
+        help="Prompt text used for Chinese synthesis in backend=zipvoice.",
+    )
+    parser.add_argument(
+        "--tts-zipvoice-ja-prompt-text",
+        default=DEFAULT_ZIPVOICE_JA_PROMPT_TEXT,
+        help="Prompt text used for Japanese synthesis in backend=zipvoice.",
+    )
+    parser.add_argument(
+        "--tts-zipvoice-zh-tokenizer",
+        default=DEFAULT_ZIPVOICE_ZH_TOKENIZER,
+        help="Tokenizer for Chinese routing in backend=zipvoice.",
+    )
+    parser.add_argument(
+        "--tts-zipvoice-zh-lang",
+        default=DEFAULT_ZIPVOICE_ZH_LANG,
+        help="lang passed to infer_zipvoice for Chinese routing.",
+    )
+    parser.add_argument(
+        "--tts-zipvoice-ja-tokenizer",
+        default=DEFAULT_ZIPVOICE_JA_TOKENIZER,
+        help="Tokenizer for Japanese routing in backend=zipvoice.",
+    )
+    parser.add_argument(
+        "--tts-zipvoice-ja-lang",
+        default=DEFAULT_ZIPVOICE_JA_LANG,
+        help="lang passed to infer_zipvoice for Japanese routing.",
+    )
+    parser.add_argument(
+        "--tts-zipvoice-remove-long-sil",
+        action="store_true",
+        default=DEFAULT_ZIPVOICE_REMOVE_LONG_SIL,
+        help="Pass --remove-long-sil True when using backend=zipvoice.",
+    )
+    parser.add_argument(
+        "--tts-zipvoice-num-thread",
+        type=int,
+        default=DEFAULT_ZIPVOICE_NUM_THREAD,
+        help="CPU num-thread passed to infer_zipvoice for backend=zipvoice.",
+    )
 
     return parser
 
@@ -570,8 +672,9 @@ def run_cli(argv: list[str] | None = None) -> int:
 def run_vtuber(argv: list[str] | None = None) -> int:
     parser = _build_common_parser(prog="mori-vtuber")
     parser.add_argument("--live-dir", default="live", help="Directory for live outputs (relative to --workdir unless absolute).")
-    parser.add_argument("--subtitle-file", default="subtitle.txt", help="Subtitle file name under --live-dir.")
+    parser.add_argument("--subtitle-file", default="subtitle.txt", help="Subtitle file name under --live-dir (empty = disable subtitle file).")
     parser.add_argument("--event-log", default="events.jsonl", help="JSONL event log under --live-dir.")
+    parser.add_argument("--print-to-stdout", action="store_true", help="Also print final replies to the launching terminal.")
 
     parser.add_argument("--bilibili-room-id", type=int, default=0, help="Enable bilibili by room id (0 = disabled).")
     parser.add_argument("--bilibili-room-url", default="", help="Enable bilibili by room url.")
@@ -633,11 +736,26 @@ def _run(*, mode: str, args: argparse.Namespace) -> int:
             print("tts> 失败：缺少 --tts-prompt-wav（参考音频）", file=sys.stderr)
             tts_enabled = False
         else:
-            engine = LuxTTS(
-                model=args.tts_model,
-                device=args.tts_device,
-                threads=int(args.tts_threads),
+            engine = build_tts_engine(
+                backend=str(args.tts_backend),
+                tts_model=args.tts_model,
+                tts_device=args.tts_device,
+                tts_threads=int(args.tts_threads),
+                tts_zipvoice_python_bin=args.tts_zipvoice_python_bin,
+                tts_zipvoice_repo=args.tts_zipvoice_repo,
+                tts_zipvoice_model_dir=args.tts_zipvoice_model_dir,
+                tts_zipvoice_checkpoint_name=args.tts_zipvoice_checkpoint_name,
+                tts_zipvoice_zh_prompt_text=args.tts_zipvoice_zh_prompt_text,
+                tts_zipvoice_ja_prompt_text=args.tts_zipvoice_ja_prompt_text,
+                tts_zipvoice_zh_tokenizer=args.tts_zipvoice_zh_tokenizer,
+                tts_zipvoice_zh_lang=args.tts_zipvoice_zh_lang,
+                tts_zipvoice_ja_tokenizer=args.tts_zipvoice_ja_tokenizer,
+                tts_zipvoice_ja_lang=args.tts_zipvoice_ja_lang,
+                tts_zipvoice_remove_long_sil=bool(args.tts_zipvoice_remove_long_sil),
+                tts_zipvoice_num_thread=int(args.tts_zipvoice_num_thread),
             )
+            backend_name = str(getattr(engine, "backend_name", str(args.tts_backend)))
+            print(f"tts> backend={backend_name} prompt={prompt_wav}")
             py_tts = PyTTS(
                 engine=engine,
                 prompt_wav_path=prompt_wav,
@@ -662,8 +780,12 @@ def _run(*, mode: str, args: argparse.Namespace) -> int:
             live_dir = workdir / live_dir
         live_dir = live_dir.resolve()
         live_dir.mkdir(parents=True, exist_ok=True)
-        subtitle_path = str((live_dir / str(args.subtitle_file)).resolve())
-        event_log_path = str((live_dir / str(args.event_log)).resolve())
+        subtitle_name = str(args.subtitle_file or "").strip()
+        event_log_name = str(args.event_log or "").strip()
+        if subtitle_name:
+            subtitle_path = str((live_dir / subtitle_name).resolve())
+        if event_log_name:
+            event_log_path = str((live_dir / event_log_name).resolve())
         audio_dir = str((live_dir / "audio").resolve())
         Path(audio_dir).mkdir(parents=True, exist_ok=True)
     else:
@@ -710,6 +832,7 @@ def _run(*, mode: str, args: argparse.Namespace) -> int:
         },
         "interrupt_policy": str(getattr(args, "interrupt_policy", "priority")),
         "tts_enabled": bool(tts_enabled and py_tts is not None),
+        "tts_backend": str(args.tts_backend),
         "tts_model": str(args.tts_model or ""),
         "tts_prompt_wav_path": str(args.tts_prompt_wav or "").strip(),
         "tts_prompt_duration": float(args.tts_prompt_duration),
@@ -719,10 +842,17 @@ def _run(*, mode: str, args: argparse.Namespace) -> int:
         "tts_t_shift": float(args.tts_t_shift),
         "tts_speed": float(args.tts_speed),
         "tts_return_smooth": bool(args.tts_return_smooth),
+        "tts_zipvoice_repo": str(args.tts_zipvoice_repo or ""),
+        "tts_zipvoice_model_dir": str(args.tts_zipvoice_model_dir or ""),
+        "tts_zipvoice_checkpoint_name": str(args.tts_zipvoice_checkpoint_name or ""),
+        "tts_zipvoice_zh_tokenizer": str(args.tts_zipvoice_zh_tokenizer or ""),
+        "tts_zipvoice_zh_lang": str(args.tts_zipvoice_zh_lang or ""),
+        "tts_zipvoice_ja_tokenizer": str(args.tts_zipvoice_ja_tokenizer or ""),
+        "tts_zipvoice_ja_lang": str(args.tts_zipvoice_ja_lang or ""),
         "subtitle_path": subtitle_path,
         "event_log_path": event_log_path,
         "audio_dir": audio_dir,
-        "print_to_stdout": mode == "cli",
+        "print_to_stdout": bool(mode == "cli" or getattr(args, "print_to_stdout", False)),
         "bilibili_enabled": bool(mode == "vtuber" and int(getattr(args, "bilibili_room_id", 0) or 0) > 0),
     }
     if not config["system_prompt"]:

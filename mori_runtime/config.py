@@ -29,6 +29,7 @@ _VTUBER_KEYS = {
     "live_dir",
     "subtitle_file",
     "event_log",
+    "print_to_stdout",
     "bilibili_room_id",
     "bilibili_room_url",
     "bilibili_interval",
@@ -40,6 +41,7 @@ _VTUBER_KEYS = {
 
 _TTS_KEY_MAP = {
     "enabled": "tts",
+    "backend": "tts_backend",
     "model": "tts_model",
     "device": "tts_device",
     "threads": "tts_threads",
@@ -51,6 +53,18 @@ _TTS_KEY_MAP = {
     "t_shift": "tts_t_shift",
     "speed": "tts_speed",
     "return_smooth": "tts_return_smooth",
+    "zipvoice_python_bin": "tts_zipvoice_python_bin",
+    "zipvoice_repo": "tts_zipvoice_repo",
+    "zipvoice_model_dir": "tts_zipvoice_model_dir",
+    "zipvoice_checkpoint_name": "tts_zipvoice_checkpoint_name",
+    "zipvoice_zh_prompt_text": "tts_zipvoice_zh_prompt_text",
+    "zipvoice_ja_prompt_text": "tts_zipvoice_ja_prompt_text",
+    "zipvoice_zh_tokenizer": "tts_zipvoice_zh_tokenizer",
+    "zipvoice_zh_lang": "tts_zipvoice_zh_lang",
+    "zipvoice_ja_tokenizer": "tts_zipvoice_ja_tokenizer",
+    "zipvoice_ja_lang": "tts_zipvoice_ja_lang",
+    "zipvoice_remove_long_sil": "tts_zipvoice_remove_long_sil",
+    "zipvoice_num_thread": "tts_zipvoice_num_thread",
 }
 
 _LOVE2D_KEYS = {
@@ -74,6 +88,9 @@ _PATH_DEFAULT_KEYS = {
     "chat_model",
     "embed_model",
     "tts_prompt_wav",
+    "tts_zipvoice_python_bin",
+    "tts_zipvoice_repo",
+    "tts_zipvoice_model_dir",
     "puppet",
     "mapping",
     "inochi_root",

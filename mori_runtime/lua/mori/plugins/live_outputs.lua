@@ -10,6 +10,36 @@ local function trim(s)
     return (tostring(s or ""):gsub("^%s*(.-)%s*$", "%1"))
 end
 
+local function normalize_subtitle_text(text)
+    local s = tostring(text or "")
+    s = s:gsub("\r\n", "\n")
+    s = s:gsub("\r", "\n")
+    s = s:gsub("```[%w_-]*\n", "")
+    s = s:gsub("```", "")
+    s = s:gsub("%*%*(.-)%*%*", "%1")
+    s = s:gsub("%*(.-)%*", "%1")
+    s = s:gsub("__(.-)__", "%1")
+    s = s:gsub("~~(.-)~~", "%1")
+    s = s:gsub("^%s*>%s?", "")
+    s = s:gsub("\n%s*>%s?", "\n")
+    s = s:gsub("\n\n\n+", "\n\n")
+    local lines = {}
+    for line in s:gmatch("([^\n]*)\n?") do
+        if line == "" and #lines > 0 and lines[#lines] == "" then
+            -- collapse repeated blank lines
+        else
+            local cleaned = line:gsub("^%s*[%-%*]%s+", "")
+            cleaned = cleaned:gsub("^%s*%d+%.%s+", "")
+            cleaned = cleaned:gsub("^%s*#+%s*", "")
+            cleaned = cleaned:gsub("^%s*(.-)%s*$", "%1")
+            lines[#lines + 1] = cleaned
+        end
+    end
+    s = table.concat(lines, "\n")
+    s = s:gsub("\n\n\n+", "\n\n")
+    return trim(s)
+end
+
 local function write_text(path, text)
     local f = io.open(path, "w")
     if not f then
@@ -41,10 +71,15 @@ function M.setup(bus, ctx)
             write_text(subtitle_path, "")
         end)
     end
+    if event_log_path ~= "" then
+        pcall(function()
+            write_text(event_log_path, "")
+        end)
+    end
 
     bus:on(protocol.events.OUTPUT_SUBTITLE, function(payload)
         payload = type(payload) == "table" and payload or {}
-        local text = tostring(payload.text or "")
+        local text = normalize_subtitle_text(payload.text or "")
         if subtitle_path ~= "" then
             pcall(function()
                 write_text(subtitle_path, text)
@@ -76,4 +111,3 @@ function M.setup(bus, ctx)
 end
 
 return M
-

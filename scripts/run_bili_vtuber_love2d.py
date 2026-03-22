@@ -29,6 +29,37 @@ def _resolve_live_dir(*, workdir: Path, live_dir: str) -> Path:
     return (p if p.is_absolute() else (workdir / p)).resolve()
 
 
+def _clear_session_artifacts(*, live_dir: Path, subtitle_file: str, event_log: str) -> None:
+    live_dir.mkdir(parents=True, exist_ok=True)
+
+    subtitle_name = str(subtitle_file or "").strip()
+    event_name = str(event_log or "").strip()
+    clear_targets: list[Path] = []
+    if subtitle_name:
+        clear_targets.append((live_dir / subtitle_name).resolve())
+    if event_name:
+        clear_targets.append((live_dir / event_name).resolve())
+    clear_targets.append((live_dir / "mouth.txt").resolve())
+
+    for path in clear_targets:
+        try:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text("", encoding="utf-8")
+        except Exception:
+            pass
+
+    audio_dir = (live_dir / "audio").resolve()
+    try:
+        audio_dir.mkdir(parents=True, exist_ok=True)
+    except Exception:
+        return
+    for path in audio_dir.glob("turn_*.wav"):
+        try:
+            path.unlink()
+        except Exception:
+            pass
+
+
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     repo_root = _repo_root()
     p = argparse.ArgumentParser(
@@ -42,6 +73,9 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     )
     p.add_argument("--workdir", default=str(repo_root), help="Passed to vtuber.py --workdir.")
     p.add_argument("--live-dir", default="live", help="Passed to vtuber.py --live-dir (relative to --workdir if not absolute).")
+    p.add_argument("--subtitle-file", default="subtitle.txt", help="Passed to vtuber.py --subtitle-file (empty = disable subtitle file).")
+    p.add_argument("--event-log", default="events.jsonl", help="Passed to vtuber.py --event-log.")
+    p.add_argument("--print-to-stdout", action="store_true", help="Passed to vtuber.py --print-to-stdout.")
 
     p.add_argument("--bilibili-room-url", default="", help="Passed to vtuber.py --bilibili-room-url.")
     p.add_argument("--bilibili-room-id", type=int, default=0, help="Passed to vtuber.py --bilibili-room-id.")
@@ -50,17 +84,35 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p.add_argument("--exit-when-offline", action="store_true", help="Passed to vtuber.py --bilibili-exit-when-offline.")
 
     p.add_argument("--tts", action="store_true", help="Enable TTS (passed to vtuber.py --tts).")
-    p.add_argument("--tts-model", default="", help="Optional override for vtuber.py --tts-model.")
-    p.add_argument("--tts-device", choices=["auto", "cpu", "cuda", "mps", "metal"], default="auto", help="Passed to vtuber.py --tts-device.")
-    p.add_argument("--tts-threads", type=int, default=0, help="Optional override for vtuber.py --tts-threads.")
+    p.add_argument(
+        "--tts-backend",
+        choices=["lux", "zipvoice"],
+        default="",
+        help="Optional override for vtuber.py --tts-backend.",
+    )
+    p.add_argument("--tts-model", default="", help="Optional override for vtuber.py --tts-model (backend=lux).")
+    p.add_argument("--tts-device", choices=["auto", "cpu", "cuda", "mps", "metal"], default="auto", help="Passed to vtuber.py --tts-device (backend=lux).")
+    p.add_argument("--tts-threads", type=int, default=0, help="Optional override for vtuber.py --tts-threads (backend=lux).")
     p.add_argument("--tts-prompt-wav", default="", help="Passed to vtuber.py --tts-prompt-wav (required).")
-    p.add_argument("--tts-prompt-duration", type=float, default=0.0, help="Optional override for vtuber.py --tts-prompt-duration.")
-    p.add_argument("--tts-prompt-rms", type=float, default=0.0, help="Optional override for vtuber.py --tts-prompt-rms.")
+    p.add_argument("--tts-prompt-duration", type=float, default=0.0, help="Optional override for vtuber.py --tts-prompt-duration (backend=lux).")
+    p.add_argument("--tts-prompt-rms", type=float, default=0.0, help="Optional override for vtuber.py --tts-prompt-rms (backend=lux).")
     p.add_argument("--tts-num-steps", type=int, default=0, help="Optional override for vtuber.py --tts-num-steps.")
     p.add_argument("--tts-guidance-scale", type=float, default=0.0, help="Optional override for vtuber.py --tts-guidance-scale.")
     p.add_argument("--tts-t-shift", type=float, default=0.0, help="Optional override for vtuber.py --tts-t-shift.")
     p.add_argument("--tts-speed", type=float, default=0.0, help="Optional override for vtuber.py --tts-speed.")
-    p.add_argument("--tts-return-smooth", action="store_true", help="Passed to vtuber.py --tts-return-smooth.")
+    p.add_argument("--tts-return-smooth", action="store_true", help="Passed to vtuber.py --tts-return-smooth (backend=lux).")
+    p.add_argument("--tts-zipvoice-python-bin", default="", help="Optional override for vtuber.py --tts-zipvoice-python-bin.")
+    p.add_argument("--tts-zipvoice-repo", default="", help="Optional override for vtuber.py --tts-zipvoice-repo.")
+    p.add_argument("--tts-zipvoice-model-dir", default="", help="Optional override for vtuber.py --tts-zipvoice-model-dir.")
+    p.add_argument("--tts-zipvoice-checkpoint-name", default="", help="Optional override for vtuber.py --tts-zipvoice-checkpoint-name.")
+    p.add_argument("--tts-zipvoice-zh-prompt-text", default="", help="Optional override for vtuber.py --tts-zipvoice-zh-prompt-text.")
+    p.add_argument("--tts-zipvoice-ja-prompt-text", default="", help="Optional override for vtuber.py --tts-zipvoice-ja-prompt-text.")
+    p.add_argument("--tts-zipvoice-zh-tokenizer", default="", help="Optional override for vtuber.py --tts-zipvoice-zh-tokenizer.")
+    p.add_argument("--tts-zipvoice-zh-lang", default="", help="Optional override for vtuber.py --tts-zipvoice-zh-lang.")
+    p.add_argument("--tts-zipvoice-ja-tokenizer", default="", help="Optional override for vtuber.py --tts-zipvoice-ja-tokenizer.")
+    p.add_argument("--tts-zipvoice-ja-lang", default="", help="Optional override for vtuber.py --tts-zipvoice-ja-lang.")
+    p.add_argument("--tts-zipvoice-remove-long-sil", action="store_true", help="Passed to vtuber.py --tts-zipvoice-remove-long-sil.")
+    p.add_argument("--tts-zipvoice-num-thread", type=int, default=0, help="Optional override for vtuber.py --tts-zipvoice-num-thread.")
 
     p.add_argument("--love-bin", default="love", help="Path to Love2D executable (default: love).")
     p.add_argument("--puppet", default=str(_default_puppet_path(repo_root)), help="Path to .inx/.inp puppet for Love2D.")
@@ -132,6 +184,11 @@ def main() -> int:
         raise FileNotFoundError(f"puppet not found: {puppet_path} (hint: pass --puppet or rerun without --skip-prepare)")
 
     live_dir.mkdir(parents=True, exist_ok=True)
+    _clear_session_artifacts(
+        live_dir=live_dir,
+        subtitle_file=str(args.subtitle_file or ""),
+        event_log=str(args.event_log or ""),
+    )
 
     print("== What this does ==")
     print("- Start vtuber pipeline: bilibili danmaku -> LLM -> subtitle.txt + events.jsonl + optional wav (TTS)")
@@ -165,6 +222,10 @@ def main() -> int:
         vtuber_cmd += ["--config", str(args.config)]
     vtuber_cmd += ["--workdir", str(workdir)]
     vtuber_cmd += ["--live-dir", str(args.live_dir)]
+    vtuber_cmd += ["--subtitle-file", str(args.subtitle_file)]
+    vtuber_cmd += ["--event-log", str(args.event_log)]
+    if bool(args.print_to_stdout):
+        vtuber_cmd.append("--print-to-stdout")
     if int(args.bilibili_room_id or 0) > 0:
         vtuber_cmd += ["--bilibili-room-id", str(int(args.bilibili_room_id))]
     if str(args.bilibili_room_url or "").strip():
@@ -175,9 +236,13 @@ def main() -> int:
         vtuber_cmd.append("--bilibili-exit-when-offline")
     if bool(args.tts):
         vtuber_cmd.append("--tts")
+        tts_backend = str(getattr(args, "tts_backend", "") or "").strip()
+        if tts_backend:
+            vtuber_cmd += ["--tts-backend", tts_backend]
         if str(args.tts_model or "").strip():
             vtuber_cmd += ["--tts-model", str(args.tts_model)]
-        vtuber_cmd += ["--tts-device", str(args.tts_device)]
+        if str(args.tts_device or "").strip():
+            vtuber_cmd += ["--tts-device", str(args.tts_device)]
         if int(args.tts_threads or 0) > 0:
             vtuber_cmd += ["--tts-threads", str(int(args.tts_threads))]
 
@@ -199,6 +264,30 @@ def main() -> int:
             vtuber_cmd += ["--tts-speed", str(float(args.tts_speed))]
         if bool(args.tts_return_smooth):
             vtuber_cmd.append("--tts-return-smooth")
+        if str(args.tts_zipvoice_python_bin or "").strip():
+            vtuber_cmd += ["--tts-zipvoice-python-bin", str(Path(args.tts_zipvoice_python_bin).expanduser().resolve())]
+        if str(args.tts_zipvoice_repo or "").strip():
+            vtuber_cmd += ["--tts-zipvoice-repo", str(Path(args.tts_zipvoice_repo).expanduser().resolve())]
+        if str(args.tts_zipvoice_model_dir or "").strip():
+            vtuber_cmd += ["--tts-zipvoice-model-dir", str(Path(args.tts_zipvoice_model_dir).expanduser().resolve())]
+        if str(args.tts_zipvoice_checkpoint_name or "").strip():
+            vtuber_cmd += ["--tts-zipvoice-checkpoint-name", str(args.tts_zipvoice_checkpoint_name)]
+        if str(args.tts_zipvoice_zh_prompt_text or "").strip():
+            vtuber_cmd += ["--tts-zipvoice-zh-prompt-text", str(args.tts_zipvoice_zh_prompt_text)]
+        if str(args.tts_zipvoice_ja_prompt_text or "").strip():
+            vtuber_cmd += ["--tts-zipvoice-ja-prompt-text", str(args.tts_zipvoice_ja_prompt_text)]
+        if str(args.tts_zipvoice_zh_tokenizer or "").strip():
+            vtuber_cmd += ["--tts-zipvoice-zh-tokenizer", str(args.tts_zipvoice_zh_tokenizer)]
+        if str(args.tts_zipvoice_zh_lang or "").strip():
+            vtuber_cmd += ["--tts-zipvoice-zh-lang", str(args.tts_zipvoice_zh_lang)]
+        if str(args.tts_zipvoice_ja_tokenizer or "").strip():
+            vtuber_cmd += ["--tts-zipvoice-ja-tokenizer", str(args.tts_zipvoice_ja_tokenizer)]
+        if str(args.tts_zipvoice_ja_lang or "").strip():
+            vtuber_cmd += ["--tts-zipvoice-ja-lang", str(args.tts_zipvoice_ja_lang)]
+        if bool(args.tts_zipvoice_remove_long_sil):
+            vtuber_cmd.append("--tts-zipvoice-remove-long-sil")
+        if int(args.tts_zipvoice_num_thread or 0) > 0:
+            vtuber_cmd += ["--tts-zipvoice-num-thread", str(int(args.tts_zipvoice_num_thread))]
 
     print("vtuber> " + " ".join(vtuber_cmd))
     vtuber_proc = subprocess.Popen(vtuber_cmd, cwd=str(repo_root), text=True)

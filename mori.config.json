@@ -13,8 +13,9 @@
   },
   "tts": {
     "enabled": true,
+    "backend": "zipvoice",
     "model": "YatharthS/LuxTTS",
-    "device": "auto",
+    "device": "cuda",
     "threads": 4,
     "prompt_wav": "mori_tts/prompt.wav",
     "prompt_duration": 5.0,
@@ -23,7 +24,19 @@
     "guidance_scale": 3.0,
     "t_shift": 0.5,
     "speed": 1.0,
-    "return_smooth": false
+    "return_smooth": false,
+    "zipvoice_python_bin": "/home/morusa/dataset/train/zipvoice-env/bin/python",
+    "zipvoice_repo": "/home/morusa/dataset/train/ZipVoice",
+    "zipvoice_model_dir": "/home/morusa/AI/mori/model/zipvoice_zhja_iter3000_avg2",
+    "zipvoice_checkpoint_name": "iter-3000-avg-2.pt",
+    "zipvoice_zh_prompt_text": "你觉得你可以跟我玩儿一场",
+    "zipvoice_ja_prompt_text": "基本的に全く辛くなくてあの",
+    "zipvoice_zh_tokenizer": "emilia",
+    "zipvoice_zh_lang": "en-us",
+    "zipvoice_ja_tokenizer": "openjtalk",
+    "zipvoice_ja_lang": "ja",
+    "zipvoice_remove_long_sil": false,
+    "zipvoice_num_thread": 1
   },
   "cli": {
     "audio_dir": "tts_out",
@@ -31,8 +44,9 @@
   },
   "vtuber": {
     "live_dir": "live",
-    "subtitle_file": "subtitle.txt",
+    "subtitle_file": "",
     "event_log": "events.jsonl",
+    "print_to_stdout": true,
     "bilibili_room_id": 1862085389,
     "bilibili_room_url": "",
     "bilibili_interval": 2.0,
