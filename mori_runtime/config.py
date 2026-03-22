@@ -65,6 +65,10 @@ _TTS_KEY_MAP = {
     "zipvoice_ja_lang": "tts_zipvoice_ja_lang",
     "zipvoice_remove_long_sil": "tts_zipvoice_remove_long_sil",
     "zipvoice_num_thread": "tts_zipvoice_num_thread",
+    "zipvoice_lang_detector": "tts_zipvoice_lang_detector",
+    "zipvoice_lang_min_conf": "tts_zipvoice_lang_min_conf",
+    "zipvoice_prompt_manifest": "tts_zipvoice_prompt_manifest",
+    "zipvoice_prompt_policy": "tts_zipvoice_prompt_policy",
 }
 
 _LOVE2D_KEYS = {
@@ -91,6 +95,7 @@ _PATH_DEFAULT_KEYS = {
     "tts_zipvoice_python_bin",
     "tts_zipvoice_repo",
     "tts_zipvoice_model_dir",
+    "tts_zipvoice_prompt_manifest",
     "puppet",
     "mapping",
     "inochi_root",

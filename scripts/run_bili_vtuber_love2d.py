@@ -113,6 +113,25 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p.add_argument("--tts-zipvoice-ja-lang", default="", help="Optional override for vtuber.py --tts-zipvoice-ja-lang.")
     p.add_argument("--tts-zipvoice-remove-long-sil", action="store_true", help="Passed to vtuber.py --tts-zipvoice-remove-long-sil.")
     p.add_argument("--tts-zipvoice-num-thread", type=int, default=0, help="Optional override for vtuber.py --tts-zipvoice-num-thread.")
+    p.add_argument("--tts-zipvoice-prompt-manifest", default="", help="Optional override for vtuber.py --tts-zipvoice-prompt-manifest.")
+    p.add_argument(
+        "--tts-zipvoice-prompt-policy",
+        choices=["", "intent_hash", "round_robin", "random"],
+        default="",
+        help="Optional override for vtuber.py --tts-zipvoice-prompt-policy.",
+    )
+    p.add_argument(
+        "--tts-zipvoice-lang-detector",
+        choices=["auto", "heuristic", "lingua"],
+        default="",
+        help="Optional override for vtuber.py --tts-zipvoice-lang-detector.",
+    )
+    p.add_argument(
+        "--tts-zipvoice-lang-min-conf",
+        type=float,
+        default=0.0,
+        help="Optional override for vtuber.py --tts-zipvoice-lang-min-conf.",
+    )
 
     p.add_argument("--love-bin", default="love", help="Path to Love2D executable (default: love).")
     p.add_argument("--puppet", default=str(_default_puppet_path(repo_root)), help="Path to .inx/.inp puppet for Love2D.")
@@ -247,9 +266,12 @@ def main() -> int:
             vtuber_cmd += ["--tts-threads", str(int(args.tts_threads))]
 
         prompt_wav = str(args.tts_prompt_wav or "").strip()
-        if not prompt_wav:
-            raise ValueError("Missing required arg: --tts-prompt-wav")
-        vtuber_cmd += ["--tts-prompt-wav", str(Path(prompt_wav).expanduser().resolve())]
+        backend_hint = str(getattr(args, "tts_backend", "") or "").strip().lower()
+        manifest_hint = str(getattr(args, "tts_zipvoice_prompt_manifest", "") or "").strip()
+        if not prompt_wav and not (backend_hint == "zipvoice" and manifest_hint):
+            raise ValueError("Missing required arg: --tts-prompt-wav (or provide zipvoice prompt manifest)")
+        if prompt_wav:
+            vtuber_cmd += ["--tts-prompt-wav", str(Path(prompt_wav).expanduser().resolve())]
         if float(args.tts_prompt_duration or 0.0) > 0.0:
             vtuber_cmd += ["--tts-prompt-duration", str(float(args.tts_prompt_duration))]
         if float(args.tts_prompt_rms or 0.0) > 0.0:
@@ -288,6 +310,14 @@ def main() -> int:
             vtuber_cmd.append("--tts-zipvoice-remove-long-sil")
         if int(args.tts_zipvoice_num_thread or 0) > 0:
             vtuber_cmd += ["--tts-zipvoice-num-thread", str(int(args.tts_zipvoice_num_thread))]
+        if str(args.tts_zipvoice_prompt_manifest or "").strip():
+            vtuber_cmd += ["--tts-zipvoice-prompt-manifest", str(Path(args.tts_zipvoice_prompt_manifest).expanduser().resolve())]
+        if str(args.tts_zipvoice_prompt_policy or "").strip():
+            vtuber_cmd += ["--tts-zipvoice-prompt-policy", str(args.tts_zipvoice_prompt_policy)]
+        if str(args.tts_zipvoice_lang_detector or "").strip():
+            vtuber_cmd += ["--tts-zipvoice-lang-detector", str(args.tts_zipvoice_lang_detector)]
+        if float(args.tts_zipvoice_lang_min_conf or 0.0) > 0.0:
+            vtuber_cmd += ["--tts-zipvoice-lang-min-conf", str(float(args.tts_zipvoice_lang_min_conf))]
 
     print("vtuber> " + " ".join(vtuber_cmd))
     vtuber_proc = subprocess.Popen(vtuber_cmd, cwd=str(repo_root), text=True)

@@ -17,6 +17,10 @@ from mori_runtime.tts_backends import (
     DEFAULT_TTS_BACKEND,
     DEFAULT_ZIPVOICE_CHECKPOINT_NAME,
     DEFAULT_ZIPVOICE_JA_LANG,
+    DEFAULT_ZIPVOICE_LANG_DETECTOR,
+    DEFAULT_ZIPVOICE_LANG_MIN_CONF,
+    DEFAULT_ZIPVOICE_PROMPT_MANIFEST,
+    DEFAULT_ZIPVOICE_PROMPT_POLICY,
     DEFAULT_ZIPVOICE_JA_PROMPT_TEXT,
     DEFAULT_ZIPVOICE_JA_TOKENIZER,
     DEFAULT_ZIPVOICE_MODEL_DIR,
@@ -288,13 +292,21 @@ class PyTTS:
                 speed=speed,
                 return_smooth=return_smooth,
             )
+            optional_keys: list[str] = []
             if lang_hint:
                 kwargs["lang_hint"] = lang_hint
-            try:
-                self._engine.synthesize_to_wav(**kwargs)
-            except TypeError:
-                kwargs.pop("lang_hint", None)
-                self._engine.synthesize_to_wav(**kwargs)
+                optional_keys.append("lang_hint")
+            kwargs["prompt_key"] = intent_id
+            optional_keys.append("prompt_key")
+            while True:
+                try:
+                    self._engine.synthesize_to_wav(**kwargs)
+                    break
+                except TypeError:
+                    if not optional_keys:
+                        raise
+                    k = optional_keys.pop()
+                    kwargs.pop(k, None)
             return job.wav_path
 
         fut = self._executor.submit(_run)
@@ -655,6 +667,29 @@ def _build_common_parser(*, prog: str) -> argparse.ArgumentParser:
         default=DEFAULT_ZIPVOICE_NUM_THREAD,
         help="CPU num-thread passed to infer_zipvoice for backend=zipvoice.",
     )
+    parser.add_argument(
+        "--tts-zipvoice-lang-detector",
+        choices=["auto", "heuristic", "lingua"],
+        default=DEFAULT_ZIPVOICE_LANG_DETECTOR,
+        help="Language detector for zipvoice routing.",
+    )
+    parser.add_argument(
+        "--tts-zipvoice-lang-min-conf",
+        type=float,
+        default=DEFAULT_ZIPVOICE_LANG_MIN_CONF,
+        help="Minimum confidence for lingua detector before falling back to script rules.",
+    )
+    parser.add_argument(
+        "--tts-zipvoice-prompt-manifest",
+        default=DEFAULT_ZIPVOICE_PROMPT_MANIFEST,
+        help="Comma-separated TSV manifest paths for prompt pool (id<TAB>text<TAB>wav_or_mp3_path).",
+    )
+    parser.add_argument(
+        "--tts-zipvoice-prompt-policy",
+        choices=["intent_hash", "round_robin", "random"],
+        default=DEFAULT_ZIPVOICE_PROMPT_POLICY,
+        help="Prompt selection policy when --tts-zipvoice-prompt-manifest is set.",
+    )
 
     return parser
 
@@ -732,7 +767,11 @@ def _run(*, mode: str, args: argparse.Namespace) -> int:
     py_tts: PyTTS | None = None
     if tts_enabled:
         prompt_wav = str(args.tts_prompt_wav or "").strip()
-        if not prompt_wav:
+        use_prompt_manifest = bool(
+            str(args.tts_backend or "").strip().lower() == "zipvoice"
+            and str(args.tts_zipvoice_prompt_manifest or "").strip()
+        )
+        if not prompt_wav and not use_prompt_manifest:
             print("tts> 失败：缺少 --tts-prompt-wav（参考音频）", file=sys.stderr)
             tts_enabled = False
         else:
@@ -753,9 +792,16 @@ def _run(*, mode: str, args: argparse.Namespace) -> int:
                 tts_zipvoice_ja_lang=args.tts_zipvoice_ja_lang,
                 tts_zipvoice_remove_long_sil=bool(args.tts_zipvoice_remove_long_sil),
                 tts_zipvoice_num_thread=int(args.tts_zipvoice_num_thread),
+                tts_zipvoice_lang_detector=str(args.tts_zipvoice_lang_detector),
+                tts_zipvoice_lang_min_conf=float(args.tts_zipvoice_lang_min_conf),
+                tts_zipvoice_prompt_manifest=str(args.tts_zipvoice_prompt_manifest),
+                tts_zipvoice_prompt_policy=str(args.tts_zipvoice_prompt_policy),
             )
             backend_name = str(getattr(engine, "backend_name", str(args.tts_backend)))
-            print(f"tts> backend={backend_name} prompt={prompt_wav}")
+            if prompt_wav:
+                print(f"tts> backend={backend_name} prompt={prompt_wav}")
+            else:
+                print(f"tts> backend={backend_name} prompt=<from-manifest>")
             py_tts = PyTTS(
                 engine=engine,
                 prompt_wav_path=prompt_wav,
@@ -849,6 +895,10 @@ def _run(*, mode: str, args: argparse.Namespace) -> int:
         "tts_zipvoice_zh_lang": str(args.tts_zipvoice_zh_lang or ""),
         "tts_zipvoice_ja_tokenizer": str(args.tts_zipvoice_ja_tokenizer or ""),
         "tts_zipvoice_ja_lang": str(args.tts_zipvoice_ja_lang or ""),
+        "tts_zipvoice_lang_detector": str(args.tts_zipvoice_lang_detector or ""),
+        "tts_zipvoice_lang_min_conf": float(args.tts_zipvoice_lang_min_conf),
+        "tts_zipvoice_prompt_manifest": str(args.tts_zipvoice_prompt_manifest or ""),
+        "tts_zipvoice_prompt_policy": str(args.tts_zipvoice_prompt_policy or ""),
         "subtitle_path": subtitle_path,
         "event_log_path": event_log_path,
         "audio_dir": audio_dir,
