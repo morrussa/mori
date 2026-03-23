@@ -349,6 +349,8 @@ class PyTTS:
                         "tts_t_shift",
                         "tts_speed",
                         "tts_return_smooth",
+                        "tts_cache_hit",
+                        "tts_cache_path",
                         "prompt_id",
                         "prompt_route",
                         "prompt_wav_path",

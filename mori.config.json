@@ -40,7 +40,7 @@
     "zipvoice_lang_min_conf": 0.6,
     "zipvoice_prompt_manifest": "mori_runtime/prompts/zipvoice_zhja_dual_prompt_manifest.tsv",
     "zipvoice_prompt_policy": "intent_hash",
-    "zipvoice_quality_profile": "balanced",
+    "zipvoice_quality_profile": "realtime",
     "zipvoice_num_steps": 0,
     "zipvoice_guidance_scale": 0.0,
     "zipvoice_t_shift": 0.0,
