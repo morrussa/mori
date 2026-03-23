@@ -4,9 +4,7 @@ import csv
 from dataclasses import dataclass
 import hashlib
 import json
-import os
 import random
-import shutil
 import subprocess
 import threading
 from pathlib import Path
@@ -383,20 +381,6 @@ def _safe_stat_mtime_ns(path: Path) -> int:
         return 0
 
 
-def _safe_hardlink_or_copy(src: Path, dst: Path) -> None:
-    if src.resolve() == dst.resolve():
-        return
-    dst.parent.mkdir(parents=True, exist_ok=True)
-    if dst.exists():
-        dst.unlink()
-    try:
-        os.link(src, dst)
-        return
-    except Exception:
-        pass
-    shutil.copy2(src, dst)
-
-
 @dataclass(frozen=True)
 class _ZipVoiceSynthDefaults:
     num_steps: int
@@ -662,7 +646,6 @@ class ZipVoiceTTS:
             raise FileNotFoundError(f"ZipVoice worker script not found: {self._worker_script}")
 
         self._start_worker()
-        self._prewarm_route_prompt_cache()
 
     @property
     def backend_name(self) -> str:
@@ -788,12 +771,14 @@ class ZipVoiceTTS:
         t_shift: float,
         speed: float,
         return_smooth: bool,
+        prompt_cache_path: Path,
     ) -> None:
         req = {
             "tokenizer": tokenizer,
             "lang": lang,
             "prompt_wav": str(prompt_wav),
             "prompt_text": prompt_text,
+            "prompt_cache_path": str(prompt_cache_path),
             "text": text,
             "out_wav": str(out_wav),
             "num_step": max(1, int(num_steps)),
@@ -993,21 +978,15 @@ class ZipVoiceTTS:
             "sample_rate": int(self._output_sample_rate),
         }
 
-    def _persistent_cache_path(
+    def _persistent_prompt_cache_path(
         self,
         *,
         out_wav: Path,
         route: _ZipVoiceRoute,
         prompt_entry: _PromptEntry,
-        text: str,
-        num_steps: int,
-        guidance_scale: float,
-        t_shift: float,
-        speed: float,
-        return_smooth: bool,
     ) -> Path:
         payload = {
-            "schema": "mori-zipvoice-cache-v1",
+            "schema": "mori-zipvoice-prompt-cache-v1",
             "model_type": self._model_type,
             "model_dir": str(self._model_dir),
             "checkpoint_name": self._checkpoint_name,
@@ -1018,22 +997,14 @@ class ZipVoiceTTS:
             "prompt_text": prompt_entry.text,
             "prompt_wav": str(prompt_entry.wav_path),
             "prompt_wav_mtime_ns": _safe_stat_mtime_ns(prompt_entry.wav_path),
-            "text": text,
             "remove_long_sil": bool(self._remove_long_sil),
-            "num_steps": int(num_steps),
-            "guidance_scale": float(guidance_scale),
-            "t_shift": float(t_shift),
-            "speed": float(speed),
-            "return_smooth": bool(return_smooth),
-            "sample_rate": int(self._output_sample_rate),
-            "vocoder_profile": self._vocoder_profile,
-            "vocoder_model": self._vocoder_model,
+            "feature_sample_rate": int(self._feature_sample_rate),
         }
         digest = hashlib.blake2b(
             json.dumps(payload, ensure_ascii=False, sort_keys=True).encode("utf-8"),
             digest_size=16,
         ).hexdigest()
-        return out_wav.parent / f".mori_tts_cache_{digest}.wav"
+        return out_wav.parent / f".mori_prompt_cache_{digest}.pt"
 
     def synthesize_to_wav(
         self,
@@ -1081,46 +1052,32 @@ class ZipVoiceTTS:
         resolved_t_shift = float(t_shift) if float(t_shift or 0.0) > 0.0 else float(synth_defaults["t_shift"])
         resolved_speed = float(speed) if float(speed or 0.0) > 0.0 else float(synth_defaults["speed"])
         resolved_return_smooth = bool(return_smooth or synth_defaults["return_smooth"])
-        cache_wav = self._persistent_cache_path(
+        prompt_cache_path = self._persistent_prompt_cache_path(
             out_wav=out_wav,
             route=route,
             prompt_entry=prompt_entry,
-            text=tts_text,
-            num_steps=max(1, resolved_num_steps),
-            guidance_scale=resolved_guidance_scale,
-            t_shift=resolved_t_shift,
-            speed=resolved_speed,
-            return_smooth=resolved_return_smooth,
         )
-
-        cache_hit = cache_wav.is_file()
-        if cache_hit:
-            _safe_hardlink_or_copy(cache_wav, out_wav)
-        else:
-            with self._worker_lock:
-                self._infer_with_worker(
-                    out_wav=cache_wav,
-                    tokenizer=tokenizer,
-                    lang=lang,
-                    prompt_wav=prompt_wav,
-                    prompt_text=prompt_text,
-                    text=tts_text,
-                    num_steps=max(1, resolved_num_steps),
-                    guidance_scale=resolved_guidance_scale,
-                    t_shift=resolved_t_shift,
-                    speed=resolved_speed,
-                    return_smooth=resolved_return_smooth,
-                )
-            if not cache_wav.is_file():
-                raise FileNotFoundError(f"ZipVoice did not generate cache wav file: {cache_wav}")
-            _safe_hardlink_or_copy(cache_wav, out_wav)
+        with self._worker_lock:
+            self._infer_with_worker(
+                out_wav=out_wav,
+                tokenizer=tokenizer,
+                lang=lang,
+                prompt_wav=prompt_wav,
+                prompt_text=prompt_text,
+                text=tts_text,
+                num_steps=max(1, resolved_num_steps),
+                guidance_scale=resolved_guidance_scale,
+                t_shift=resolved_t_shift,
+                speed=resolved_speed,
+                return_smooth=resolved_return_smooth,
+                prompt_cache_path=prompt_cache_path,
+            )
 
         if not out_wav.is_file():
             raise FileNotFoundError(f"ZipVoice did not generate wav file: {out_wav}")
         return {
             "wav_path": str(out_wav),
-            "tts_cache_path": str(cache_wav),
-            "tts_cache_hit": cache_hit,
+            "tts_prompt_cache_path": str(prompt_cache_path),
             "tts_route": route.key,
             "tts_tokenizer": tokenizer,
             "tts_lang": lang,

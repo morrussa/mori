@@ -112,7 +112,66 @@ def _build_prompt_context(
     }
 
 
-def _get_cached_prompt_context(
+def _load_persistent_prompt_context(
+    *,
+    cache_path: str,
+    device: Any,
+) -> dict[str, Any] | None:
+    text = str(cache_path or "").strip()
+    if not text:
+        return None
+    path = Path(text).expanduser().resolve()
+    if not path.is_file():
+        return None
+
+    import torch
+
+    payload = torch.load(str(path), map_location="cpu")
+    if not isinstance(payload, dict):
+        return None
+    prompt_features = payload.get("prompt_features")
+    if prompt_features is None:
+        return None
+    return {
+        "prompt_rms": float(payload.get("prompt_rms", 0.0) or 0.0),
+        "prompt_duration": float(payload.get("prompt_duration", 0.0) or 0.0),
+        "prompt_features": prompt_features.to(device),
+        "prompt_tokens_str": payload.get("prompt_tokens_str") or [],
+        "prompt_tokens": payload.get("prompt_tokens") or [],
+    }
+
+
+def _save_persistent_prompt_context(
+    *,
+    cache_path: str,
+    prompt_text: str,
+    prompt_wav: str,
+    ctx: dict[str, Any],
+) -> None:
+    text = str(cache_path or "").strip()
+    if not text:
+        return
+    path = Path(text).expanduser().resolve()
+    path.parent.mkdir(parents=True, exist_ok=True)
+
+    import torch
+
+    payload = {
+        "schema": "mori-zipvoice-prompt-cache-v1",
+        "prompt_text": str(prompt_text),
+        "prompt_wav": str(prompt_wav),
+        "prompt_rms": float(ctx.get("prompt_rms", 0.0) or 0.0),
+        "prompt_duration": float(ctx.get("prompt_duration", 0.0) or 0.0),
+        "prompt_tokens_str": ctx.get("prompt_tokens_str") or [],
+        "prompt_tokens": ctx.get("prompt_tokens") or [],
+        "prompt_features": ctx["prompt_features"].detach().cpu(),
+    }
+    tmp_path = path.with_suffix(path.suffix + ".tmp")
+    torch.save(payload, str(tmp_path))
+    tmp_path.replace(path)
+
+
+def _get_cached_prompt_context_with_persistence(
     *,
     prompt_text: str,
     prompt_wav: str,
@@ -126,6 +185,7 @@ def _get_cached_prompt_context(
     remove_silence_fn: Any,
     rms_norm_fn: Any,
     add_punctuation_fn: Any,
+    persistent_cache_path: str = "",
 ) -> dict[str, Any]:
     key = _prompt_cache_key(
         prompt_text=prompt_text,
@@ -139,6 +199,14 @@ def _get_cached_prompt_context(
     cached = _PROMPT_CACHE.get(key)
     if cached is not None:
         return cached
+
+    loaded = _load_persistent_prompt_context(
+        cache_path=persistent_cache_path,
+        device=device,
+    )
+    if loaded is not None:
+        _PROMPT_CACHE[key] = loaded
+        return loaded
 
     ctx = _build_prompt_context(
         prompt_text=prompt_text,
@@ -155,6 +223,12 @@ def _get_cached_prompt_context(
         add_punctuation_fn=add_punctuation_fn,
     )
     _PROMPT_CACHE[key] = ctx
+    _save_persistent_prompt_context(
+        cache_path=persistent_cache_path,
+        prompt_text=prompt_text,
+        prompt_wav=prompt_wav,
+        ctx=ctx,
+    )
     return ctx
 
 
@@ -253,12 +327,13 @@ def _generate_sentence_with_vocoder(
     chunk_tokens_punctuation: Any,
     cross_fade_concat: Any,
     remove_silence: Any,
-    _get_cached_prompt_context: Any,
+    get_prompt_context: Any,
+    prompt_cache_path: str = "",
 ):
     import torch
     import torchaudio
 
-    ctx = _get_cached_prompt_context(
+    ctx = get_prompt_context(
         prompt_text=prompt_text,
         prompt_wav=prompt_wav,
         tokenizer=tokenizer,
@@ -267,6 +342,7 @@ def _generate_sentence_with_vocoder(
         target_rms=target_rms,
         feat_scale=feat_scale,
         device=device,
+        persistent_cache_path=prompt_cache_path,
     )
     prompt_rms = float(ctx["prompt_rms"])
     prompt_duration = float(ctx["prompt_duration"])
@@ -517,8 +593,9 @@ def main() -> None:
         target_rms: float,
         feat_scale: float,
         device: Any,
+        persistent_cache_path: str = "",
     ) -> dict[str, Any]:
-        return _get_cached_prompt_context(
+        return _get_cached_prompt_context_with_persistence(
             prompt_text=prompt_text,
             prompt_wav=prompt_wav,
             tokenizer=tokenizer,
@@ -531,6 +608,7 @@ def main() -> None:
             remove_silence_fn=remove_silence,
             rms_norm_fn=rms_norm,
             add_punctuation_fn=add_punctuation,
+            persistent_cache_path=persistent_cache_path,
         )
 
     _emit(
@@ -566,9 +644,10 @@ def main() -> None:
             lang = str(req["lang"])
             prompt_wav = str(Path(str(req["prompt_wav"])).expanduser().resolve())
             prompt_text = str(req["prompt_text"])
+            prompt_cache_path = str(req.get("prompt_cache_path", "") or "")
             tk = get_cached_tokenizer(tokenizer, lang)
             if cmd == "prewarm":
-                ctx = _get_cached_prompt_context(
+                ctx = _get_cached_prompt_context_with_persistence(
                     prompt_text=prompt_text,
                     prompt_wav=prompt_wav,
                     tokenizer=tk,
@@ -581,6 +660,7 @@ def main() -> None:
                     remove_silence_fn=remove_silence,
                     rms_norm_fn=rms_norm,
                     add_punctuation_fn=add_punctuation,
+                    persistent_cache_path=prompt_cache_path,
                 )
                 prompt_features = ctx["prompt_features"]
                 prompt_tokens = ctx["prompt_tokens"]
@@ -627,7 +707,8 @@ def main() -> None:
                 chunk_tokens_punctuation=chunk_tokens_punctuation,
                 cross_fade_concat=cross_fade_concat,
                 remove_silence=remove_silence,
-                _get_cached_prompt_context=get_cached_prompt_context,
+                get_prompt_context=get_cached_prompt_context,
+                prompt_cache_path=prompt_cache_path,
             )
             _emit(
                 {
