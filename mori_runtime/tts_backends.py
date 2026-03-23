@@ -646,6 +646,7 @@ class ZipVoiceTTS:
             raise FileNotFoundError(f"ZipVoice worker script not found: {self._worker_script}")
 
         self._start_worker()
+        self._prewarm_route_prompt_cache()
 
     @property
     def backend_name(self) -> str:
