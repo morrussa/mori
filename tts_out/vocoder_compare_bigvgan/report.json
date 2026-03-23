@@ -1,0 +1,403 @@
+{
+  "config_path": "/home/morusa/AI/mori/mori.config.json",
+  "out_dir": "/home/morusa/AI/mori/tts_out/vocoder_compare_bigvgan",
+  "device": "cuda:0",
+  "tts_model_type": "zipvoice_distill",
+  "tts_model_dir": "/home/morusa/dataset/train/ZipVoice/egs/zipvoice/exp/zipvoice_distill_zhja",
+  "tts_checkpoint_name": "iter-1000-avg-2.pt",
+  "params": {
+    "num_steps": 4,
+    "guidance_scale": 1.0,
+    "t_shift": 0.5,
+    "speed": 1.0,
+    "return_smooth": false
+  },
+  "feature_config": {
+    "zipvoice_feature_type": "vocos",
+    "zipvoice_sampling_rate": 24000,
+    "zipvoice_num_mels": 100,
+    "zipvoice_n_fft": 1024,
+    "zipvoice_hop_length": 256,
+    "bigvgan_model_id": "nvidia/bigvgan_v2_24khz_100band_256x",
+    "bigvgan_repo": "/tmp/BigVGAN_nvidia",
+    "bigvgan_use_cuda_kernel": false,
+    "bigvgan": {
+      "sampling_rate": 24000,
+      "num_mels": 100,
+      "n_fft": 1024,
+      "hop_size": 256,
+      "win_size": 1024,
+      "fmin": 0,
+      "fmax": null
+    },
+    "note": "ZipVoice uses torchaudio mel features via VocosFbank; BigVGAN pretraining uses librosa mel features, so this is a practical A/B rather than a perfectly matched drop-in comparison."
+  },
+  "engine_wall_s": 16.34552039799928,
+  "results": [
+    {
+      "scenario": "zh_answer",
+      "lang_hint": "zh",
+      "segmented": false,
+      "parts": [
+        {
+          "segment_idx": 1,
+          "text": "这个问题我先给一个直接结论，再补充原因，这样你听起来不会太累。",
+          "chars": 31,
+          "tts_route": "zh",
+          "tts_lang": "en-us",
+          "tts_tokenizer": "emilia",
+          "prompt_id": "cute_0045",
+          "shared_acoustic_ms": 534.6201869997458,
+          "current": {
+            "wav_path": "/home/morusa/AI/mori/tts_out/vocoder_compare_bigvgan/current/zh_answer_part01.wav",
+            "sample_rate": 48000,
+            "audio_s": 5.838,
+            "vocoder_ms": 388.5409880003863,
+            "post_ms": 3.559435999704874,
+            "total_ms": 926.7206109998369,
+            "rtf": 0.15873939893796454,
+            "vocoder_profile": "lux_48k"
+          },
+          "bigvgan": {
+            "wav_path": "/home/morusa/AI/mori/tts_out/vocoder_compare_bigvgan/bigvgan_v2_24khz_100band_256x/zh_answer_part01.wav",
+            "sample_rate": 24000,
+            "audio_s": 6.179,
+            "vocoder_ms": 452.9286730012245,
+            "post_ms": 2.2043440003471915,
+            "total_ms": 989.7532040013175,
+            "rtf": 0.16018015924928264,
+            "model_id": "nvidia/bigvgan_v2_24khz_100band_256x"
+          }
+        }
+      ]
+    },
+    {
+      "scenario": "ja_answer",
+      "lang_hint": "ja",
+      "segmented": false,
+      "parts": [
+        {
+          "segment_idx": 1,
+          "text": "こんばんは、今日は少しだけ雑談してから、配信の流れを整えていくよ。",
+          "chars": 33,
+          "tts_route": "ja",
+          "tts_lang": "ja",
+          "tts_tokenizer": "openjtalk",
+          "prompt_id": "afw_ssxjPhXc_short",
+          "shared_acoustic_ms": 273.8805039989529,
+          "current": {
+            "wav_path": "/home/morusa/AI/mori/tts_out/vocoder_compare_bigvgan/current/ja_answer_part01.wav",
+            "sample_rate": 48000,
+            "audio_s": 5.871,
+            "vocoder_ms": 394.4304859996919,
+            "post_ms": 2.1188660011830507,
+            "total_ms": 670.4298559998279,
+            "rtf": 0.11419346891497663,
+            "vocoder_profile": "lux_48k"
+          },
+          "bigvgan": {
+            "wav_path": "/home/morusa/AI/mori/tts_out/vocoder_compare_bigvgan/bigvgan_v2_24khz_100band_256x/ja_answer_part01.wav",
+            "sample_rate": 24000,
+            "audio_s": 6.142,
+            "vocoder_ms": 156.53408900107024,
+            "post_ms": 105.53825999886612,
+            "total_ms": 535.9528529988893,
+            "rtf": 0.08726031471815195,
+            "model_id": "nvidia/bigvgan_v2_24khz_100band_256x"
+          }
+        }
+      ]
+    },
+    {
+      "scenario": "mixed_switch",
+      "lang_hint": "",
+      "segmented": false,
+      "parts": [
+        {
+          "segment_idx": 1,
+          "text": "这段先用中文说明一下，最后补一句 arigatou，看看混合文本时路由会不会卡住。",
+          "chars": 41,
+          "tts_route": "zh",
+          "tts_lang": "en-us",
+          "tts_tokenizer": "emilia",
+          "prompt_id": "cute_0045",
+          "shared_acoustic_ms": 285.5267539998749,
+          "current": {
+            "wav_path": "/home/morusa/AI/mori/tts_out/vocoder_compare_bigvgan/current/mixed_switch_part01.wav",
+            "sample_rate": 48000,
+            "audio_s": 7.41,
+            "vocoder_ms": 16.792060998341185,
+            "post_ms": 4.042190001200652,
+            "total_ms": 306.36100499941676,
+            "rtf": 0.04134426518210752,
+            "vocoder_profile": "lux_48k"
+          },
+          "bigvgan": {
+            "wav_path": "/home/morusa/AI/mori/tts_out/vocoder_compare_bigvgan/bigvgan_v2_24khz_100band_256x/mixed_switch_part01.wav",
+            "sample_rate": 24000,
+            "audio_s": 7.631,
+            "vocoder_ms": 1361.9944009988103,
+            "post_ms": 133.55247899926326,
+            "total_ms": 1781.0736339979485,
+            "rtf": 0.23339976857527828,
+            "model_id": "nvidia/bigvgan_v2_24khz_100band_256x"
+          }
+        }
+      ]
+    },
+    {
+      "scenario": "vtuber_cn_long",
+      "lang_hint": "zh",
+      "segmented": true,
+      "parts": [
+        {
+          "segment_idx": 1,
+          "text": "今天这个模型的响应其实比我预想的稳定。",
+          "chars": 19,
+          "tts_route": "zh",
+          "tts_lang": "en-us",
+          "tts_tokenizer": "emilia",
+          "prompt_id": "cute_0045",
+          "shared_acoustic_ms": 572.6051620004,
+          "current": {
+            "wav_path": "/home/morusa/AI/mori/tts_out/vocoder_compare_bigvgan/current/vtuber_cn_long_part01.wav",
+            "sample_rate": 48000,
+            "audio_s": 3.633,
+            "vocoder_ms": 34.024983000563225,
+            "post_ms": 3.0799129999650177,
+            "total_ms": 609.7100580009283,
+            "rtf": 0.16782550454195658,
+            "vocoder_profile": "lux_48k"
+          },
+          "bigvgan": {
+            "wav_path": "/home/morusa/AI/mori/tts_out/vocoder_compare_bigvgan/bigvgan_v2_24khz_100band_256x/vtuber_cn_long_part01.wav",
+            "sample_rate": 24000,
+            "audio_s": 3.904,
+            "vocoder_ms": 345.99650599921006,
+            "post_ms": 2.275913999255863,
+            "total_ms": 920.8775819988659,
+            "rtf": 0.23588052817593902,
+            "model_id": "nvidia/bigvgan_v2_24khz_100band_256x"
+          }
+        },
+        {
+          "segment_idx": 2,
+          "text": "如果我们把回答切成比较自然的短句，",
+          "chars": 17,
+          "tts_route": "zh",
+          "tts_lang": "en-us",
+          "tts_tokenizer": "emilia",
+          "prompt_id": "cute_0045",
+          "shared_acoustic_ms": 280.30286400098703,
+          "current": {
+            "wav_path": "/home/morusa/AI/mori/tts_out/vocoder_compare_bigvgan/current/vtuber_cn_long_part02.wav",
+            "sample_rate": 48000,
+            "audio_s": 2.997,
+            "vocoder_ms": 15.898009998636553,
+            "post_ms": 1.58715699944878,
+            "total_ms": 297.78803099907236,
+            "rtf": 0.09936203903872952,
+            "vocoder_profile": "lux_48k"
+          },
+          "bigvgan": {
+            "wav_path": "/home/morusa/AI/mori/tts_out/vocoder_compare_bigvgan/bigvgan_v2_24khz_100band_256x/vtuber_cn_long_part02.wav",
+            "sample_rate": 24000,
+            "audio_s": 3.457,
+            "vocoder_ms": 103.59309300110908,
+            "post_ms": 30.541144000380882,
+            "total_ms": 414.437101002477,
+            "rtf": 0.11988345415171449,
+            "model_id": "nvidia/bigvgan_v2_24khz_100band_256x"
+          }
+        },
+        {
+          "segment_idx": 3,
+          "text": "它就能更早开始说话，观感会好很多。",
+          "chars": 17,
+          "tts_route": "zh",
+          "tts_lang": "en-us",
+          "tts_tokenizer": "emilia",
+          "prompt_id": "cute_0045",
+          "shared_acoustic_ms": 258.12079800016363,
+          "current": {
+            "wav_path": "/home/morusa/AI/mori/tts_out/vocoder_compare_bigvgan/current/vtuber_cn_long_part03.wav",
+            "sample_rate": 48000,
+            "audio_s": 2.9,
+            "vocoder_ms": 16.38522900066164,
+            "post_ms": 1.4501200002996484,
+            "total_ms": 275.9561470011249,
+            "rtf": 0.09515729206935342,
+            "vocoder_profile": "lux_48k"
+          },
+          "bigvgan": {
+            "wav_path": "/home/morusa/AI/mori/tts_out/vocoder_compare_bigvgan/bigvgan_v2_24khz_100band_256x/vtuber_cn_long_part03.wav",
+            "sample_rate": 24000,
+            "audio_s": 3.331,
+            "vocoder_ms": 98.89932400074031,
+            "post_ms": 14.47182599986263,
+            "total_ms": 371.49194800076657,
+            "rtf": 0.11152565235687979,
+            "model_id": "nvidia/bigvgan_v2_24khz_100band_256x"
+          }
+        },
+        {
+          "segment_idx": 4,
+          "text": "真正需要担心的反而不是单句速度，而是连续三四段的时候会不会越积越慢。",
+          "chars": 34,
+          "tts_route": "zh",
+          "tts_lang": "en-us",
+          "tts_tokenizer": "emilia",
+          "prompt_id": "cute_0045",
+          "shared_acoustic_ms": 255.5655329997535,
+          "current": {
+            "wav_path": "/home/morusa/AI/mori/tts_out/vocoder_compare_bigvgan/current/vtuber_cn_long_part04.wav",
+            "sample_rate": 48000,
+            "audio_s": 6.481,
+            "vocoder_ms": 25.679944999865256,
+            "post_ms": 2.220671000031871,
+            "total_ms": 283.4661489996506,
+            "rtf": 0.04373802638476325,
+            "vocoder_profile": "lux_48k"
+          },
+          "bigvgan": {
+            "wav_path": "/home/morusa/AI/mori/tts_out/vocoder_compare_bigvgan/bigvgan_v2_24khz_100band_256x/vtuber_cn_long_part04.wav",
+            "sample_rate": 24000,
+            "audio_s": 6.631,
+            "vocoder_ms": 169.81140700045216,
+            "post_ms": 114.9421310001344,
+            "total_ms": 540.31907100034,
+            "rtf": 0.08148379897456492,
+            "model_id": "nvidia/bigvgan_v2_24khz_100band_256x"
+          }
+        }
+      ]
+    },
+    {
+      "scenario": "vtuber_ja_long",
+      "lang_hint": "ja",
+      "segmented": true,
+      "parts": [
+        {
+          "segment_idx": 1,
+          "text": "このモデルは思ったより安定していて、",
+          "chars": 18,
+          "tts_route": "ja",
+          "tts_lang": "ja",
+          "tts_tokenizer": "openjtalk",
+          "prompt_id": "afw_ssxjPhXc_short",
+          "shared_acoustic_ms": 260.4906619999383,
+          "current": {
+            "wav_path": "/home/morusa/AI/mori/tts_out/vocoder_compare_bigvgan/current/vtuber_ja_long_part01.wav",
+            "sample_rate": 48000,
+            "audio_s": 2.941,
+            "vocoder_ms": 87.58723400023882,
+            "post_ms": 1.6131470001710113,
+            "total_ms": 349.69104300034815,
+            "rtf": 0.1189020887454431,
+            "vocoder_profile": "lux_48k"
+          },
+          "bigvgan": {
+            "wav_path": "/home/morusa/AI/mori/tts_out/vocoder_compare_bigvgan/bigvgan_v2_24khz_100band_256x/vtuber_ja_long_part01.wav",
+            "sample_rate": 24000,
+            "audio_s": 3.281,
+            "vocoder_ms": 101.18051000063133,
+            "post_ms": 12.400518999129417,
+            "total_ms": 374.07169099969906,
+            "rtf": 0.11401148765611065,
+            "model_id": "nvidia/bigvgan_v2_24khz_100band_256x"
+          }
+        },
+        {
+          "segment_idx": 2,
+          "text": "短く区切って話させるとかなり自然に聞こえる。",
+          "chars": 22,
+          "tts_route": "ja",
+          "tts_lang": "ja",
+          "tts_tokenizer": "openjtalk",
+          "prompt_id": "afw_ssxjPhXc_short",
+          "shared_acoustic_ms": 351.5589380003803,
+          "current": {
+            "wav_path": "/home/morusa/AI/mori/tts_out/vocoder_compare_bigvgan/current/vtuber_ja_long_part02.wav",
+            "sample_rate": 48000,
+            "audio_s": 3.933,
+            "vocoder_ms": 15.3941170010512,
+            "post_ms": 2.5033809997694334,
+            "total_ms": 369.4564360012009,
+            "rtf": 0.09393756318362598,
+            "vocoder_profile": "lux_48k"
+          },
+          "bigvgan": {
+            "wav_path": "/home/morusa/AI/mori/tts_out/vocoder_compare_bigvgan/bigvgan_v2_24khz_100band_256x/vtuber_ja_long_part02.wav",
+            "sample_rate": 24000,
+            "audio_s": 4.154,
+            "vocoder_ms": 109.91522100084694,
+            "post_ms": 52.89643700052693,
+            "total_ms": 514.3705960017542,
+            "rtf": 0.12382537217182335,
+            "model_id": "nvidia/bigvgan_v2_24khz_100band_256x"
+          }
+        },
+        {
+          "segment_idx": 3,
+          "text": "ただし、本当に見るべきなのは一文の速さではなく、何文も続けたときに遅延が積み上がるかどうかだと思",
+          "chars": 48,
+          "tts_route": "ja",
+          "tts_lang": "ja",
+          "tts_tokenizer": "openjtalk",
+          "prompt_id": "afw_ssxjPhXc_short",
+          "shared_acoustic_ms": 290.09177400075714,
+          "current": {
+            "wav_path": "/home/morusa/AI/mori/tts_out/vocoder_compare_bigvgan/current/vtuber_ja_long_part03.wav",
+            "sample_rate": 48000,
+            "audio_s": 9.125,
+            "vocoder_ms": 165.04788100064616,
+            "post_ms": 2.7758709984482266,
+            "total_ms": 457.9155259998515,
+            "rtf": 0.050182523397244,
+            "vocoder_profile": "lux_48k"
+          },
+          "bigvgan": {
+            "wav_path": "/home/morusa/AI/mori/tts_out/vocoder_compare_bigvgan/bigvgan_v2_24khz_100band_256x/vtuber_ja_long_part03.wav",
+            "sample_rate": 24000,
+            "audio_s": 9.245,
+            "vocoder_ms": 414.42818100040313,
+            "post_ms": 165.1818979989912,
+            "total_ms": 869.7018530001515,
+            "rtf": 0.09407267203895636,
+            "model_id": "nvidia/bigvgan_v2_24khz_100band_256x"
+          }
+        },
+        {
+          "segment_idx": 4,
+          "text": "う。",
+          "chars": 2,
+          "tts_route": "ja",
+          "tts_lang": "ja",
+          "tts_tokenizer": "openjtalk",
+          "prompt_id": "afw_ssxjPhXc_short",
+          "shared_acoustic_ms": 577.6160940004047,
+          "current": {
+            "wav_path": "/home/morusa/AI/mori/tts_out/vocoder_compare_bigvgan/current/vtuber_ja_long_part04.wav",
+            "sample_rate": 48000,
+            "audio_s": 0.1,
+            "vocoder_ms": 1358.24724899976,
+            "post_ms": 1.3651739991473733,
+            "total_ms": 1937.228516999312,
+            "rtf": 19.37228516999312,
+            "vocoder_profile": "lux_48k"
+          },
+          "bigvgan": {
+            "wav_path": "/home/morusa/AI/mori/tts_out/vocoder_compare_bigvgan/bigvgan_v2_24khz_100band_256x/vtuber_ja_long_part04.wav",
+            "sample_rate": 24000,
+            "audio_s": 0.203,
+            "vocoder_ms": 260.9462159998657,
+            "post_ms": 0.7689560006838292,
+            "total_ms": 839.3312660009542,
+            "rtf": 4.134636778329823,
+            "model_id": "nvidia/bigvgan_v2_24khz_100band_256x"
+          }
+        }
+      ]
+    }
+  ]
+}
