@@ -1,0 +1,77 @@
+{
+  "replay_created_at": 1774273313.7304032,
+  "replay_created_at_iso": "2026-03-23T21:41:53+0800",
+  "source_run_dir": "/home/morusa/AI/mori/live_capture/bilibili_room_3971693_20260318-210826",
+  "output_run_dir": "/home/morusa/AI/mori/live_capture/bilibili_room_3971693_20260318-210826/replay_score_p1_live_room_20260323-213522",
+  "strategy_profile": "live_room",
+  "memory_profile": "capture",
+  "processed_messages": 3168,
+  "duration_s": 390.873,
+  "compile_ms": {
+    "count": 3168,
+    "p50_ms": 17.691,
+    "p95_ms": 27.605,
+    "max_ms": 85.083
+  },
+  "ingest_ms": {
+    "count": 3168,
+    "p50_ms": 95.154,
+    "p95_ms": 181.205,
+    "max_ms": 728.034
+  },
+  "avg_context_chars": 226.32,
+  "empty_context_rate": 0.0,
+  "flow_reason_counts": {
+    "ambient_attach": 583,
+    "assign": 19,
+    "attach_reaction": 306,
+    "attach_recent": 509,
+    "create": 246,
+    "keep_pending": 47,
+    "merge": 12,
+    "orphan_overflow": 1390,
+    "promote_orphan": 56
+  },
+  "flow_mode_counts": {
+    "single": 60,
+    "split": 3108
+  },
+  "flag_counts": {
+    "is_new": 1636,
+    "local_only": 2020,
+    "merged": 12,
+    "orphaned": 1427,
+    "pending_only": 2020
+  },
+  "p1_signature": {
+    "score_debug_non_empty": 2922,
+    "score_debug_coverage": 0.9223,
+    "signature_gain_avg": 0.0072,
+    "signature_gain_p95": 0.0264,
+    "signature_raw_avg": 0.0329,
+    "signature_mention_hit_rate": 0.0,
+    "signature_reply_hit_rate": 0.0021,
+    "signature_reaction_hit_rate": 0.0216,
+    "signature_facet_overlap_avg": 0.6062,
+    "signature_facet_total_avg": 6.1569
+  },
+  "p1_readout_gate": {
+    "gate_emitted": 1439,
+    "gate_emit_rate": 0.4542,
+    "block_emit_rate": {
+      "memory": 0.0,
+      "transcript": 0.0,
+      "pending": 0.0,
+      "trend": 0.0
+    },
+    "gate_score_mean": {
+      "memory": 0.6246,
+      "transcript": 0.7114,
+      "pending": 0.7925,
+      "trend": 0.1706,
+      "local": 0.7436,
+      "confidence": 0.3918,
+      "stability": 0.7824
+    }
+  }
+}
