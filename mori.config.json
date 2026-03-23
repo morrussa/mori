@@ -27,8 +27,9 @@
     "return_smooth": false,
     "zipvoice_python_bin": "/home/morusa/dataset/train/zipvoice-env/bin/python",
     "zipvoice_repo": "/home/morusa/dataset/train/ZipVoice",
-    "zipvoice_model_dir": "/home/morusa/AI/mori/model/zipvoice_zhja_iter3000_avg2",
-    "zipvoice_checkpoint_name": "iter-3000-avg-2.pt",
+    "zipvoice_model_type": "zipvoice_distill",
+    "zipvoice_model_dir": "/home/morusa/dataset/train/ZipVoice/egs/zipvoice/exp/zipvoice_distill_zhja",
+    "zipvoice_checkpoint_name": "iter-1000-avg-2.pt",
     "zipvoice_zh_tokenizer": "emilia",
     "zipvoice_zh_lang": "en-us",
     "zipvoice_ja_tokenizer": "openjtalk",
@@ -38,7 +39,15 @@
     "zipvoice_lang_detector": "heuristic",
     "zipvoice_lang_min_conf": 0.6,
     "zipvoice_prompt_manifest": "mori_runtime/prompts/zipvoice_zhja_dual_prompt_manifest.tsv",
-    "zipvoice_prompt_policy": "intent_hash"
+    "zipvoice_prompt_policy": "intent_hash",
+    "zipvoice_quality_profile": "balanced",
+    "zipvoice_num_steps": 0,
+    "zipvoice_guidance_scale": 0.0,
+    "zipvoice_t_shift": 0.0,
+    "zipvoice_speed": 0.0,
+    "zipvoice_return_smooth": false,
+    "zipvoice_vocoder_profile": "lux_48k",
+    "zipvoice_vocoder_model": "YatharthS/LuxTTS"
   },
   "cli": {
     "audio_dir": "tts_out",

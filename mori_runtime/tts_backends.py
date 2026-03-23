@@ -10,7 +10,7 @@ import threading
 from pathlib import Path
 from typing import Any, Literal
 
-from mori_tts.lux_tts import LuxTTS
+from mori_tts.lux_tts import LUX_TTS_DEFAULT_MODEL, LuxTTS
 
 TTSBackendName = Literal["lux", "zipvoice"]
 
@@ -18,6 +18,7 @@ DEFAULT_TTS_BACKEND: TTSBackendName = "zipvoice"
 
 DEFAULT_ZIPVOICE_PYTHON_BIN = "/home/morusa/dataset/train/zipvoice-env/bin/python"
 DEFAULT_ZIPVOICE_REPO = "/home/morusa/dataset/train/ZipVoice"
+DEFAULT_ZIPVOICE_MODEL_TYPE = "zipvoice"
 DEFAULT_ZIPVOICE_MODEL_DIR = "/home/morusa/AI/mori/model/zipvoice_zhja_iter3000_avg2"
 DEFAULT_ZIPVOICE_CHECKPOINT_NAME = "iter-3000-avg-2.pt"
 DEFAULT_ZIPVOICE_ZH_TOKENIZER = "emilia"
@@ -34,9 +35,16 @@ DEFAULT_ZIPVOICE_LANG_DETECTOR = "auto"
 DEFAULT_ZIPVOICE_LANG_MIN_CONF = 0.60
 DEFAULT_ZIPVOICE_PROMPT_MANIFEST = ""
 DEFAULT_ZIPVOICE_PROMPT_POLICY = "intent_hash"
+DEFAULT_ZIPVOICE_QUALITY_PROFILE = "balanced"
+DEFAULT_ZIPVOICE_VOCODER_PROFILE = "base_24k"
+DEFAULT_ZIPVOICE_VOCODER_MODEL = LUX_TTS_DEFAULT_MODEL
 
 _ZIPVOICE_LANG_DETECTOR_CHOICES = {"auto", "heuristic", "lingua"}
+_ZIPVOICE_MODEL_TYPE_CHOICES = {"zipvoice", "zipvoice_distill"}
 _ZIPVOICE_PROMPT_POLICY_CHOICES = {"intent_hash", "round_robin", "random"}
+_ZIPVOICE_QUALITY_PROFILE_CHOICES = {"realtime", "balanced", "hq"}
+_ZIPVOICE_VOCODER_PROFILE_CHOICES = {"base_24k", "lux_48k"}
+_ZIPVOICE_MODEL_CONFIG_FILENAMES = ("model.json", "config.json")
 _PROMPT_MANIFEST_TEXT_KEYS = {"text", "prompt_text", "transcript"}
 _PROMPT_MANIFEST_WAV_KEYS = {"wav_path", "path", "audio_path", "audio", "wav", "prompt_wav", "wav_or_mp3_path"}
 _PROMPT_MANIFEST_ID_KEYS = {"id", "uniq_id", "prompt_id", "key", "name"}
@@ -107,6 +115,14 @@ def _normalize_prompt_route(value: str) -> Literal["", "zh", "ja"]:
     if lang in {"zh", "en"}:
         return "zh"
     return ""
+
+
+def _resolve_zipvoice_model_config_path(model_dir: Path) -> Path | None:
+    for filename in _ZIPVOICE_MODEL_CONFIG_FILENAMES:
+        path = (model_dir / filename).resolve()
+        if path.is_file():
+            return path
+    return None
 
 
 @dataclass(frozen=True)
@@ -358,6 +374,71 @@ class _ZipVoiceRoute:
     lang: str
 
 
+@dataclass(frozen=True)
+class _ZipVoiceSynthDefaults:
+    num_steps: int
+    guidance_scale: float
+    t_shift: float
+    speed: float
+    return_smooth: bool
+
+
+def _resolve_zipvoice_synth_defaults(
+    *,
+    quality_profile: str = DEFAULT_ZIPVOICE_QUALITY_PROFILE,
+    num_steps: int = 0,
+    guidance_scale: float = 0.0,
+    t_shift: float = 0.0,
+    speed: float = 0.0,
+    return_smooth: bool = False,
+) -> _ZipVoiceSynthDefaults:
+    profile = str(quality_profile or DEFAULT_ZIPVOICE_QUALITY_PROFILE).strip().lower()
+    if profile not in _ZIPVOICE_QUALITY_PROFILE_CHOICES:
+        raise ValueError(
+            f"Unsupported zipvoice quality profile: {quality_profile!r}. "
+            f"Expected one of {sorted(_ZIPVOICE_QUALITY_PROFILE_CHOICES)}."
+        )
+
+    profile_defaults: dict[str, _ZipVoiceSynthDefaults] = {
+        "realtime": _ZipVoiceSynthDefaults(
+            num_steps=4,
+            guidance_scale=1.0,
+            t_shift=0.5,
+            speed=1.0,
+            return_smooth=False,
+        ),
+        "balanced": _ZipVoiceSynthDefaults(
+            num_steps=8,
+            guidance_scale=1.0,
+            t_shift=0.5,
+            speed=1.0,
+            return_smooth=False,
+        ),
+        "hq": _ZipVoiceSynthDefaults(
+            num_steps=10,
+            guidance_scale=1.0,
+            t_shift=0.5,
+            speed=1.0,
+            return_smooth=False,
+        ),
+    }
+    base = profile_defaults[profile]
+    resolved_num_steps = int(num_steps) if int(num_steps or 0) > 0 else int(base.num_steps)
+    resolved_guidance_scale = (
+        float(guidance_scale) if float(guidance_scale or 0.0) > 0.0 else float(base.guidance_scale)
+    )
+    resolved_t_shift = float(t_shift) if float(t_shift or 0.0) > 0.0 else float(base.t_shift)
+    resolved_speed = float(speed) if float(speed or 0.0) > 0.0 else float(base.speed)
+    resolved_return_smooth = bool(return_smooth or base.return_smooth)
+    return _ZipVoiceSynthDefaults(
+        num_steps=max(1, resolved_num_steps),
+        guidance_scale=resolved_guidance_scale,
+        t_shift=resolved_t_shift,
+        speed=resolved_speed,
+        return_smooth=resolved_return_smooth,
+    )
+
+
 class _LinguaDetector:
     def __init__(self) -> None:
         self._detector: Any | None = None
@@ -440,6 +521,7 @@ class ZipVoiceTTS:
         *,
         python_bin: str | Path = DEFAULT_ZIPVOICE_PYTHON_BIN,
         zipvoice_repo: str | Path = DEFAULT_ZIPVOICE_REPO,
+        model_type: str = DEFAULT_ZIPVOICE_MODEL_TYPE,
         model_dir: str | Path = DEFAULT_ZIPVOICE_MODEL_DIR,
         checkpoint_name: str = DEFAULT_ZIPVOICE_CHECKPOINT_NAME,
         zh_tokenizer: str = DEFAULT_ZIPVOICE_ZH_TOKENIZER,
@@ -456,9 +538,23 @@ class ZipVoiceTTS:
         lang_min_conf: float = DEFAULT_ZIPVOICE_LANG_MIN_CONF,
         prompt_manifest: str | Path = DEFAULT_ZIPVOICE_PROMPT_MANIFEST,
         prompt_policy: str = DEFAULT_ZIPVOICE_PROMPT_POLICY,
+        quality_profile: str = DEFAULT_ZIPVOICE_QUALITY_PROFILE,
+        default_num_steps: int = 0,
+        default_guidance_scale: float = 0.0,
+        default_t_shift: float = 0.0,
+        default_speed: float = 0.0,
+        default_return_smooth: bool = False,
+        vocoder_profile: str = DEFAULT_ZIPVOICE_VOCODER_PROFILE,
+        vocoder_model: str | Path = DEFAULT_ZIPVOICE_VOCODER_MODEL,
     ) -> None:
         self._python_bin = Path(python_bin).expanduser().resolve()
         self._zipvoice_repo = Path(zipvoice_repo).expanduser().resolve()
+        self._model_type = str(model_type or DEFAULT_ZIPVOICE_MODEL_TYPE).strip().lower()
+        if self._model_type not in _ZIPVOICE_MODEL_TYPE_CHOICES:
+            raise ValueError(
+                f"Unsupported zipvoice model type: {model_type!r}. "
+                f"Expected one of {sorted(_ZIPVOICE_MODEL_TYPE_CHOICES)}."
+            )
         self._model_dir = Path(model_dir).expanduser().resolve()
         self._checkpoint_name = str(checkpoint_name).strip() or DEFAULT_ZIPVOICE_CHECKPOINT_NAME
         self._zh_tokenizer = str(zh_tokenizer or DEFAULT_ZIPVOICE_ZH_TOKENIZER).strip()
@@ -486,6 +582,22 @@ class ZipVoiceTTS:
             raise ValueError(
                 f"Unsupported zipvoice prompt policy: {prompt_policy!r}. Expected one of {sorted(_ZIPVOICE_PROMPT_POLICY_CHOICES)}."
             )
+        self._quality_profile = str(quality_profile or DEFAULT_ZIPVOICE_QUALITY_PROFILE).strip().lower()
+        self._synth_defaults = _resolve_zipvoice_synth_defaults(
+            quality_profile=self._quality_profile,
+            num_steps=default_num_steps,
+            guidance_scale=default_guidance_scale,
+            t_shift=default_t_shift,
+            speed=default_speed,
+            return_smooth=default_return_smooth,
+        )
+        self._vocoder_profile = str(vocoder_profile or DEFAULT_ZIPVOICE_VOCODER_PROFILE).strip().lower()
+        if self._vocoder_profile not in _ZIPVOICE_VOCODER_PROFILE_CHOICES:
+            raise ValueError(
+                f"Unsupported zipvoice vocoder profile: {vocoder_profile!r}. "
+                f"Expected one of {sorted(_ZIPVOICE_VOCODER_PROFILE_CHOICES)}."
+            )
+        self._vocoder_model = str(vocoder_model or DEFAULT_ZIPVOICE_VOCODER_MODEL).strip()
         self._prompt_pool = _load_prompt_pool_from_manifests(self._prompt_manifest)
         self._pool_lock = threading.Lock()
         self._pool_rr_idx = {"zh": 0, "ja": 0}
@@ -494,6 +606,8 @@ class ZipVoiceTTS:
         self._worker_proc: subprocess.Popen[str] | None = None
         self._worker_script = (Path(__file__).resolve().parent / "zipvoice_worker.py").resolve()
         self._prompt_cache_stats: dict[Literal["zh", "ja"], dict[str, Any]] = {}
+        self._feature_sample_rate = 24_000
+        self._output_sample_rate = 24_000
 
         if not self._python_bin.is_file():
             raise FileNotFoundError(f"ZipVoice python not found: {self._python_bin}")
@@ -501,10 +615,16 @@ class ZipVoiceTTS:
             raise NotADirectoryError(f"ZipVoice repo not found: {self._zipvoice_repo}")
         if not self._model_dir.is_dir():
             raise NotADirectoryError(f"ZipVoice model_dir not found: {self._model_dir}")
-        for fn in [self._checkpoint_name, "model.json", "tokens.txt"]:
+        for fn in [self._checkpoint_name, "tokens.txt"]:
             f = self._model_dir / fn
             if not f.is_file():
                 raise FileNotFoundError(f"ZipVoice model file missing: {f}")
+        model_config_path = _resolve_zipvoice_model_config_path(self._model_dir)
+        if model_config_path is None:
+            expected = ", ".join(_ZIPVOICE_MODEL_CONFIG_FILENAMES)
+            raise FileNotFoundError(
+                f"ZipVoice model config missing under {self._model_dir}. Expected one of: {expected}"
+            )
         if self._prompt_manifest and not self._prompt_pool:
             raise ValueError(f"ZipVoice prompt manifest has no usable entries: {self._prompt_manifest}")
         if not self._has_prompt_for_route("zh"):
@@ -545,12 +665,18 @@ class ZipVoiceTTS:
             str(self._worker_script),
             "--zipvoice-repo",
             str(self._zipvoice_repo),
+            "--model-type",
+            self._model_type,
             "--model-dir",
             str(self._model_dir),
             "--checkpoint-name",
             self._checkpoint_name,
             "--num-thread",
             str(self._num_thread),
+            "--vocoder-profile",
+            self._vocoder_profile,
+            "--vocoder-model",
+            self._vocoder_model,
         ]
         proc = subprocess.Popen(
             cmd,
@@ -565,6 +691,8 @@ class ZipVoiceTTS:
         ready = self._read_worker_message()
         if not ready.get("ready", False):
             raise RuntimeError(f"ZipVoice worker failed to start: {ready}")
+        self._feature_sample_rate = int(ready.get("sampling_rate", 24_000) or 24_000)
+        self._output_sample_rate = int(ready.get("output_sample_rate", self._feature_sample_rate) or self._feature_sample_rate)
 
     def _write_worker_request(self, req: dict[str, Any]) -> dict[str, Any]:
         proc = self._worker_proc
@@ -636,6 +764,7 @@ class ZipVoiceTTS:
         guidance_scale: float,
         t_shift: float,
         speed: float,
+        return_smooth: bool,
     ) -> None:
         req = {
             "tokenizer": tokenizer,
@@ -648,6 +777,7 @@ class ZipVoiceTTS:
             "guidance_scale": float(guidance_scale),
             "t_shift": float(t_shift),
             "speed": float(speed),
+            "return_smooth": bool(return_smooth),
             "target_rms": 0.1,
             "feat_scale": 0.1,
             "max_duration": 40.0,
@@ -826,6 +956,20 @@ class ZipVoiceTTS:
             return "singleton"
         return "shared"
 
+    def default_synthesis_options(self) -> dict[str, Any]:
+        return {
+            "num_steps": int(self._synth_defaults.num_steps),
+            "guidance_scale": float(self._synth_defaults.guidance_scale),
+            "t_shift": float(self._synth_defaults.t_shift),
+            "speed": float(self._synth_defaults.speed),
+            "return_smooth": bool(self._synth_defaults.return_smooth),
+            "model_type": self._model_type,
+            "quality_profile": self._quality_profile,
+            "vocoder_profile": self._vocoder_profile,
+            "vocoder_model": self._vocoder_model,
+            "sample_rate": int(self._output_sample_rate),
+        }
+
     def synthesize_to_wav(
         self,
         *,
@@ -834,15 +978,15 @@ class ZipVoiceTTS:
         prompt_wav_path: str | Path,
         prompt_duration: float = 0.0,
         prompt_rms: float = 0.0,
-        num_steps: int = 8,
-        guidance_scale: float = 1.0,
-        t_shift: float = 0.5,
-        speed: float = 1.0,
+        num_steps: int = 0,
+        guidance_scale: float = 0.0,
+        t_shift: float = 0.0,
+        speed: float = 0.0,
         return_smooth: bool = False,
         lang_hint: str = "",
         prompt_key: str = "",
     ) -> Path | dict[str, Any]:
-        del prompt_wav_path, prompt_duration, prompt_rms, return_smooth
+        del prompt_wav_path, prompt_duration, prompt_rms
         out_wav = Path(out_wav_path).expanduser().resolve()
         out_wav.parent.mkdir(parents=True, exist_ok=True)
 
@@ -862,6 +1006,17 @@ class ZipVoiceTTS:
         if not prompt_wav.is_file():
             raise FileNotFoundError(f"ZipVoice prompt wav not found: {prompt_wav}")
 
+        synth_defaults = self.default_synthesis_options()
+        resolved_num_steps = int(num_steps) if int(num_steps or 0) > 0 else int(synth_defaults["num_steps"])
+        resolved_guidance_scale = (
+            float(guidance_scale)
+            if float(guidance_scale or 0.0) > 0.0
+            else float(synth_defaults["guidance_scale"])
+        )
+        resolved_t_shift = float(t_shift) if float(t_shift or 0.0) > 0.0 else float(synth_defaults["t_shift"])
+        resolved_speed = float(speed) if float(speed or 0.0) > 0.0 else float(synth_defaults["speed"])
+        resolved_return_smooth = bool(return_smooth or synth_defaults["return_smooth"])
+
         with self._worker_lock:
             self._infer_with_worker(
                 out_wav=out_wav,
@@ -870,10 +1025,11 @@ class ZipVoiceTTS:
                 prompt_wav=prompt_wav,
                 prompt_text=prompt_text,
                 text=tts_text,
-                num_steps=max(1, int(num_steps)),
-                guidance_scale=float(guidance_scale),
-                t_shift=float(t_shift),
-                speed=float(speed),
+                num_steps=max(1, resolved_num_steps),
+                guidance_scale=resolved_guidance_scale,
+                t_shift=resolved_t_shift,
+                speed=resolved_speed,
+                return_smooth=resolved_return_smooth,
             )
         if not out_wav.is_file():
             raise FileNotFoundError(f"ZipVoice did not generate wav file: {out_wav}")
@@ -887,6 +1043,15 @@ class ZipVoiceTTS:
             "prompt_wav_path": str(prompt_wav),
             "prompt_manifest_path": str(prompt_entry.manifest_path or ""),
             "prompt_pool_name": self._prompt_pool_name_for_route(route.key, prompt_entry),
+            "tts_sample_rate": int(self._output_sample_rate),
+            "tts_vocoder_profile": self._vocoder_profile,
+            "tts_quality_profile": self._quality_profile,
+            "tts_num_steps": max(1, resolved_num_steps),
+            "tts_guidance_scale": resolved_guidance_scale,
+            "tts_t_shift": resolved_t_shift,
+            "tts_speed": resolved_speed,
+            "tts_return_smooth": resolved_return_smooth,
+            "tts_model_type": self._model_type,
         }
 
 
@@ -898,6 +1063,7 @@ def build_tts_engine(
     tts_threads: int,
     tts_zipvoice_python_bin: str | Path,
     tts_zipvoice_repo: str | Path,
+    tts_zipvoice_model_type: str,
     tts_zipvoice_model_dir: str | Path,
     tts_zipvoice_checkpoint_name: str,
     tts_zipvoice_zh_tokenizer: str,
@@ -914,12 +1080,21 @@ def build_tts_engine(
     tts_zipvoice_lang_min_conf: float,
     tts_zipvoice_prompt_manifest: str | Path,
     tts_zipvoice_prompt_policy: str,
+    tts_zipvoice_quality_profile: str,
+    tts_zipvoice_num_steps: int,
+    tts_zipvoice_guidance_scale: float,
+    tts_zipvoice_t_shift: float,
+    tts_zipvoice_speed: float,
+    tts_zipvoice_return_smooth: bool,
+    tts_zipvoice_vocoder_profile: str,
+    tts_zipvoice_vocoder_model: str | Path,
 ) -> Any:
     b = str(backend or DEFAULT_TTS_BACKEND).strip().lower()
     if b == "zipvoice":
         return ZipVoiceTTS(
             python_bin=tts_zipvoice_python_bin,
             zipvoice_repo=tts_zipvoice_repo,
+            model_type=tts_zipvoice_model_type,
             model_dir=tts_zipvoice_model_dir,
             checkpoint_name=tts_zipvoice_checkpoint_name,
             zh_tokenizer=tts_zipvoice_zh_tokenizer,
@@ -936,6 +1111,14 @@ def build_tts_engine(
             lang_min_conf=tts_zipvoice_lang_min_conf,
             prompt_manifest=tts_zipvoice_prompt_manifest,
             prompt_policy=tts_zipvoice_prompt_policy,
+            quality_profile=tts_zipvoice_quality_profile,
+            default_num_steps=tts_zipvoice_num_steps,
+            default_guidance_scale=tts_zipvoice_guidance_scale,
+            default_t_shift=tts_zipvoice_t_shift,
+            default_speed=tts_zipvoice_speed,
+            default_return_smooth=tts_zipvoice_return_smooth,
+            vocoder_profile=tts_zipvoice_vocoder_profile,
+            vocoder_model=tts_zipvoice_vocoder_model,
         )
 
     if b != "lux":

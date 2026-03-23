@@ -1,0 +1,83 @@
+{
+  "version": 1,
+  "common": {
+    "workdir": ".",
+    "llama_bin_dir": "",
+    "chat_model": "",
+    "embed_model": "",
+    "ctx_size": 8192,
+    "n_predict": 512,
+    "temp": 0.7,
+    "top_p": 0.9,
+    "system": ""
+  },
+  "tts": {
+    "enabled": true,
+    "backend": "zipvoice",
+    "model": "YatharthS/LuxTTS",
+    "device": "cuda",
+    "threads": 4,
+    "prompt_wav": "",
+    "prompt_duration": 5.0,
+    "prompt_rms": 0.01,
+    "num_steps": 4,
+    "guidance_scale": 3.0,
+    "t_shift": 0.5,
+    "speed": 1.0,
+    "return_smooth": false,
+    "zipvoice_python_bin": "/home/morusa/dataset/train/zipvoice-env/bin/python",
+    "zipvoice_repo": "/home/morusa/dataset/train/ZipVoice",
+    "zipvoice_model_type": "zipvoice_distill",
+    "zipvoice_model_dir": "/home/morusa/dataset/train/ZipVoice/egs/zipvoice/exp/zipvoice_distill_zhja",
+    "zipvoice_checkpoint_name": "iter-1000-avg-2.pt",
+    "zipvoice_zh_tokenizer": "emilia",
+    "zipvoice_zh_lang": "en-us",
+    "zipvoice_ja_tokenizer": "openjtalk",
+    "zipvoice_ja_lang": "ja",
+    "zipvoice_remove_long_sil": false,
+    "zipvoice_num_thread": 1,
+    "zipvoice_lang_detector": "heuristic",
+    "zipvoice_lang_min_conf": 0.6,
+    "zipvoice_prompt_manifest": "mori_runtime/prompts/zipvoice_zhja_dual_prompt_manifest.tsv",
+    "zipvoice_prompt_policy": "intent_hash",
+    "zipvoice_quality_profile": "balanced",
+    "zipvoice_num_steps": 0,
+    "zipvoice_guidance_scale": 0.0,
+    "zipvoice_t_shift": 0.0,
+    "zipvoice_speed": 0.0,
+    "zipvoice_return_smooth": false,
+    "zipvoice_cuda_fp16": true,
+    "zipvoice_vocoder_profile": "lux_48k",
+    "zipvoice_vocoder_model": "YatharthS/LuxTTS"
+  },
+  "cli": {
+    "audio_dir": "tts_out",
+    "interrupt_policy": "priority"
+  },
+  "vtuber": {
+    "live_dir": "live",
+    "subtitle_file": "",
+    "event_log": "events.jsonl",
+    "print_to_stdout": true,
+    "bilibili_room_id": 1862085389,
+    "bilibili_room_url": "",
+    "bilibili_interval": 2.0,
+    "bilibili_catchup": 1,
+    "bilibili_exit_when_offline": false,
+    "bilibili_live_check_interval": 10.0,
+    "interrupt_policy": "priority"
+  },
+  "love2d": {
+    "tts": true,
+    "love_bin": "love",
+    "puppet": "model/inochi2d/puppets/aka/Aka.inx",
+    "mapping": "",
+    "mouse_look": "0",
+    "skip_prepare": false
+  },
+  "inochi": {
+    "inochi_root": "model/inochi2d",
+    "inochi_bin": "",
+    "inochi_x11": false
+  }
+}

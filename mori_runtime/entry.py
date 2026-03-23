@@ -23,12 +23,16 @@ from mori_runtime.tts_backends import (
     DEFAULT_ZIPVOICE_LANG_DETECTOR,
     DEFAULT_ZIPVOICE_LANG_MIN_CONF,
     DEFAULT_ZIPVOICE_MODEL_DIR,
+    DEFAULT_ZIPVOICE_MODEL_TYPE,
     DEFAULT_ZIPVOICE_NUM_THREAD,
     DEFAULT_ZIPVOICE_PYTHON_BIN,
     DEFAULT_ZIPVOICE_PROMPT_MANIFEST,
     DEFAULT_ZIPVOICE_PROMPT_POLICY,
+    DEFAULT_ZIPVOICE_QUALITY_PROFILE,
     DEFAULT_ZIPVOICE_REMOVE_LONG_SIL,
     DEFAULT_ZIPVOICE_REPO,
+    DEFAULT_ZIPVOICE_VOCODER_MODEL,
+    DEFAULT_ZIPVOICE_VOCODER_PROFILE,
     DEFAULT_ZIPVOICE_ZH_LANG,
     DEFAULT_ZIPVOICE_ZH_PROMPT_TEXT,
     DEFAULT_ZIPVOICE_ZH_PROMPT_WAV,
@@ -337,6 +341,14 @@ class PyTTS:
                         "tts_route",
                         "tts_tokenizer",
                         "tts_lang",
+                        "tts_sample_rate",
+                        "tts_vocoder_profile",
+                        "tts_quality_profile",
+                        "tts_num_steps",
+                        "tts_guidance_scale",
+                        "tts_t_shift",
+                        "tts_speed",
+                        "tts_return_smooth",
                         "prompt_id",
                         "prompt_route",
                         "prompt_wav_path",
@@ -352,6 +364,7 @@ class PyTTS:
                 err = str(e)
             with self._lock:
                 self._jobs.pop(job_id, None)
+            finished_at = time.time()
             done.append(
                 _bridge_record(
                     {
@@ -366,7 +379,8 @@ class PyTTS:
                         "ok": ok,
                         "error": err,
                         "created_at": job.created_at,
-                        "finished_at": time.time(),
+                        "finished_at": finished_at,
+                        "tts_latency_ms": max(0.0, (finished_at - job.created_at) * 1000.0),
                         **meta,
                     }
                 )
@@ -643,6 +657,12 @@ def _build_common_parser(*, prog: str) -> argparse.ArgumentParser:
         help="Model directory for backend=zipvoice.",
     )
     parser.add_argument(
+        "--tts-zipvoice-model-type",
+        choices=["zipvoice", "zipvoice_distill"],
+        default=DEFAULT_ZIPVOICE_MODEL_TYPE,
+        help="Model architecture for backend=zipvoice.",
+    )
+    parser.add_argument(
         "--tts-zipvoice-checkpoint-name",
         default=DEFAULT_ZIPVOICE_CHECKPOINT_NAME,
         help="Checkpoint filename for backend=zipvoice.",
@@ -721,6 +741,52 @@ def _build_common_parser(*, prog: str) -> argparse.ArgumentParser:
         choices=["intent_hash", "round_robin", "random"],
         default=DEFAULT_ZIPVOICE_PROMPT_POLICY,
         help="Prompt selection policy when --tts-zipvoice-prompt-manifest is set.",
+    )
+    parser.add_argument(
+        "--tts-zipvoice-quality-profile",
+        choices=["realtime", "balanced", "hq"],
+        default=DEFAULT_ZIPVOICE_QUALITY_PROFILE,
+        help="Default sampling profile for backend=zipvoice.",
+    )
+    parser.add_argument(
+        "--tts-zipvoice-num-steps",
+        type=int,
+        default=0,
+        help="Optional override for zipvoice profile num_steps. 0 means use profile default.",
+    )
+    parser.add_argument(
+        "--tts-zipvoice-guidance-scale",
+        type=float,
+        default=0.0,
+        help="Optional override for zipvoice profile guidance scale. 0 means use profile default.",
+    )
+    parser.add_argument(
+        "--tts-zipvoice-t-shift",
+        type=float,
+        default=0.0,
+        help="Optional override for zipvoice profile t_shift. 0 means use profile default.",
+    )
+    parser.add_argument(
+        "--tts-zipvoice-speed",
+        type=float,
+        default=0.0,
+        help="Optional override for zipvoice profile speed. 0 means use profile default.",
+    )
+    parser.add_argument(
+        "--tts-zipvoice-return-smooth",
+        action="store_true",
+        help="Use Lux-style smooth 48k output path when backend=zipvoice and vocoder profile supports it.",
+    )
+    parser.add_argument(
+        "--tts-zipvoice-vocoder-profile",
+        choices=["base_24k", "lux_48k"],
+        default=DEFAULT_ZIPVOICE_VOCODER_PROFILE,
+        help="Vocoder profile for backend=zipvoice.",
+    )
+    parser.add_argument(
+        "--tts-zipvoice-vocoder-model",
+        default=DEFAULT_ZIPVOICE_VOCODER_MODEL,
+        help="HF repo id or local path for zipvoice vocoder profile assets.",
     )
 
     return parser
@@ -827,6 +893,7 @@ def _run(*, mode: str, args: argparse.Namespace) -> int:
                 tts_threads=int(args.tts_threads),
                 tts_zipvoice_python_bin=args.tts_zipvoice_python_bin,
                 tts_zipvoice_repo=args.tts_zipvoice_repo,
+                tts_zipvoice_model_type=str(args.tts_zipvoice_model_type),
                 tts_zipvoice_model_dir=args.tts_zipvoice_model_dir,
                 tts_zipvoice_checkpoint_name=args.tts_zipvoice_checkpoint_name,
                 tts_zipvoice_zh_tokenizer=args.tts_zipvoice_zh_tokenizer,
@@ -843,8 +910,19 @@ def _run(*, mode: str, args: argparse.Namespace) -> int:
                 tts_zipvoice_lang_min_conf=float(args.tts_zipvoice_lang_min_conf),
                 tts_zipvoice_prompt_manifest=str(args.tts_zipvoice_prompt_manifest),
                 tts_zipvoice_prompt_policy=str(args.tts_zipvoice_prompt_policy),
+                tts_zipvoice_quality_profile=str(args.tts_zipvoice_quality_profile),
+                tts_zipvoice_num_steps=int(args.tts_zipvoice_num_steps),
+                tts_zipvoice_guidance_scale=float(args.tts_zipvoice_guidance_scale),
+                tts_zipvoice_t_shift=float(args.tts_zipvoice_t_shift),
+                tts_zipvoice_speed=float(args.tts_zipvoice_speed),
+                tts_zipvoice_return_smooth=bool(args.tts_zipvoice_return_smooth),
+                tts_zipvoice_vocoder_profile=str(args.tts_zipvoice_vocoder_profile),
+                tts_zipvoice_vocoder_model=args.tts_zipvoice_vocoder_model,
             )
             backend_name = str(getattr(engine, "backend_name", str(args.tts_backend)))
+            zipvoice_synth_defaults: dict[str, Any] = {}
+            if backend_name == "zipvoice" and hasattr(engine, "default_synthesis_options"):
+                zipvoice_synth_defaults = engine.default_synthesis_options()
             if prompt_wav:
                 print(f"tts> backend={backend_name} prompt={prompt_wav}")
             elif zh_fixed_prompt_ready or ja_fixed_prompt_ready:
@@ -856,16 +934,29 @@ def _run(*, mode: str, args: argparse.Namespace) -> int:
                 print(f"tts> backend={backend_name} prompt=<fixed {' '.join(fixed_parts)}>")
             else:
                 print(f"tts> backend={backend_name} prompt=<from-manifest>")
+            if zipvoice_synth_defaults:
+                print(
+                    "tts> "
+                    f"model_type={zipvoice_synth_defaults.get('model_type', args.tts_zipvoice_model_type)} "
+                    f"profile={zipvoice_synth_defaults['quality_profile']} "
+                    f"vocoder={zipvoice_synth_defaults['vocoder_profile']} "
+                    f"sr={zipvoice_synth_defaults['sample_rate']} "
+                    f"steps={zipvoice_synth_defaults['num_steps']} "
+                    f"guidance={zipvoice_synth_defaults['guidance_scale']} "
+                    f"t_shift={zipvoice_synth_defaults['t_shift']} "
+                    f"speed={zipvoice_synth_defaults['speed']} "
+                    f"smooth={str(zipvoice_synth_defaults['return_smooth']).lower()}"
+                )
             py_tts = PyTTS(
                 engine=engine,
                 prompt_wav_path=prompt_wav,
                 prompt_duration=float(args.tts_prompt_duration),
                 prompt_rms=float(args.tts_prompt_rms),
-                num_steps=int(args.tts_num_steps),
-                guidance_scale=float(args.tts_guidance_scale),
-                t_shift=float(args.tts_t_shift),
-                speed=float(args.tts_speed),
-                return_smooth=bool(args.tts_return_smooth),
+                num_steps=int(zipvoice_synth_defaults.get("num_steps", args.tts_num_steps)),
+                guidance_scale=float(zipvoice_synth_defaults.get("guidance_scale", args.tts_guidance_scale)),
+                t_shift=float(zipvoice_synth_defaults.get("t_shift", args.tts_t_shift)),
+                speed=float(zipvoice_synth_defaults.get("speed", args.tts_speed)),
+                return_smooth=bool(zipvoice_synth_defaults.get("return_smooth", args.tts_return_smooth)),
                 max_workers=1,
             )
 
@@ -943,6 +1034,7 @@ def _run(*, mode: str, args: argparse.Namespace) -> int:
         "tts_speed": float(args.tts_speed),
         "tts_return_smooth": bool(args.tts_return_smooth),
         "tts_zipvoice_repo": str(args.tts_zipvoice_repo or ""),
+        "tts_zipvoice_model_type": str(args.tts_zipvoice_model_type or ""),
         "tts_zipvoice_model_dir": str(args.tts_zipvoice_model_dir or ""),
         "tts_zipvoice_checkpoint_name": str(args.tts_zipvoice_checkpoint_name or ""),
         "tts_zipvoice_zh_tokenizer": str(args.tts_zipvoice_zh_tokenizer or ""),
@@ -957,6 +1049,14 @@ def _run(*, mode: str, args: argparse.Namespace) -> int:
         "tts_zipvoice_lang_min_conf": float(args.tts_zipvoice_lang_min_conf),
         "tts_zipvoice_prompt_manifest": str(args.tts_zipvoice_prompt_manifest or ""),
         "tts_zipvoice_prompt_policy": str(args.tts_zipvoice_prompt_policy or ""),
+        "tts_zipvoice_quality_profile": str(args.tts_zipvoice_quality_profile or ""),
+        "tts_zipvoice_num_steps": int(args.tts_zipvoice_num_steps),
+        "tts_zipvoice_guidance_scale": float(args.tts_zipvoice_guidance_scale),
+        "tts_zipvoice_t_shift": float(args.tts_zipvoice_t_shift),
+        "tts_zipvoice_speed": float(args.tts_zipvoice_speed),
+        "tts_zipvoice_return_smooth": bool(args.tts_zipvoice_return_smooth),
+        "tts_zipvoice_vocoder_profile": str(args.tts_zipvoice_vocoder_profile or ""),
+        "tts_zipvoice_vocoder_model": str(args.tts_zipvoice_vocoder_model or ""),
         "subtitle_path": subtitle_path,
         "event_log_path": event_log_path,
         "audio_dir": audio_dir,

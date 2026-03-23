@@ -55,6 +55,7 @@ _TTS_KEY_MAP = {
     "return_smooth": "tts_return_smooth",
     "zipvoice_python_bin": "tts_zipvoice_python_bin",
     "zipvoice_repo": "tts_zipvoice_repo",
+    "zipvoice_model_type": "tts_zipvoice_model_type",
     "zipvoice_model_dir": "tts_zipvoice_model_dir",
     "zipvoice_checkpoint_name": "tts_zipvoice_checkpoint_name",
     "zipvoice_zh_tokenizer": "tts_zipvoice_zh_tokenizer",
@@ -71,6 +72,14 @@ _TTS_KEY_MAP = {
     "zipvoice_lang_min_conf": "tts_zipvoice_lang_min_conf",
     "zipvoice_prompt_manifest": "tts_zipvoice_prompt_manifest",
     "zipvoice_prompt_policy": "tts_zipvoice_prompt_policy",
+    "zipvoice_quality_profile": "tts_zipvoice_quality_profile",
+    "zipvoice_num_steps": "tts_zipvoice_num_steps",
+    "zipvoice_guidance_scale": "tts_zipvoice_guidance_scale",
+    "zipvoice_t_shift": "tts_zipvoice_t_shift",
+    "zipvoice_speed": "tts_zipvoice_speed",
+    "zipvoice_return_smooth": "tts_zipvoice_return_smooth",
+    "zipvoice_vocoder_profile": "tts_zipvoice_vocoder_profile",
+    "zipvoice_vocoder_model": "tts_zipvoice_vocoder_model",
 }
 
 _LOVE2D_KEYS = {

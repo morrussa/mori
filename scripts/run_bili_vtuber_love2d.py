@@ -113,6 +113,12 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p.add_argument("--tts-return-smooth", action="store_true", help="Passed to vtuber.py --tts-return-smooth (backend=lux).")
     p.add_argument("--tts-zipvoice-python-bin", default="", help="Optional override for vtuber.py --tts-zipvoice-python-bin.")
     p.add_argument("--tts-zipvoice-repo", default="", help="Optional override for vtuber.py --tts-zipvoice-repo.")
+    p.add_argument(
+        "--tts-zipvoice-model-type",
+        choices=["", "zipvoice", "zipvoice_distill"],
+        default="",
+        help="Optional override for vtuber.py --tts-zipvoice-model-type.",
+    )
     p.add_argument("--tts-zipvoice-model-dir", default="", help="Optional override for vtuber.py --tts-zipvoice-model-dir.")
     p.add_argument("--tts-zipvoice-checkpoint-name", default="", help="Optional override for vtuber.py --tts-zipvoice-checkpoint-name.")
     p.add_argument("--tts-zipvoice-zh-tokenizer", default="", help="Optional override for vtuber.py --tts-zipvoice-zh-tokenizer.")
@@ -314,6 +320,8 @@ def main() -> int:
             vtuber_cmd += ["--tts-zipvoice-python-bin", str(Path(args.tts_zipvoice_python_bin).expanduser().resolve())]
         if str(args.tts_zipvoice_repo or "").strip():
             vtuber_cmd += ["--tts-zipvoice-repo", str(Path(args.tts_zipvoice_repo).expanduser().resolve())]
+        if str(args.tts_zipvoice_model_type or "").strip():
+            vtuber_cmd += ["--tts-zipvoice-model-type", str(args.tts_zipvoice_model_type)]
         if str(args.tts_zipvoice_model_dir or "").strip():
             vtuber_cmd += ["--tts-zipvoice-model-dir", str(Path(args.tts_zipvoice_model_dir).expanduser().resolve())]
         if str(args.tts_zipvoice_checkpoint_name or "").strip():

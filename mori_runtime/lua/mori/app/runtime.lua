@@ -242,11 +242,22 @@ local function drain_tts(bus, ctx, cfg, canceled_intents)
                     tts_route = tostring(r.tts_route or ""),
                     tts_tokenizer = tostring(r.tts_tokenizer or ""),
                     tts_lang = tostring(r.tts_lang or ""),
+                    tts_sample_rate = tonumber(r.tts_sample_rate or 0) or 0,
+                    tts_vocoder_profile = tostring(r.tts_vocoder_profile or ""),
+                    tts_quality_profile = tostring(r.tts_quality_profile or ""),
+                    tts_num_steps = tonumber(r.tts_num_steps or 0) or 0,
+                    tts_guidance_scale = tonumber(r.tts_guidance_scale or 0) or 0,
+                    tts_t_shift = tonumber(r.tts_t_shift or 0) or 0,
+                    tts_speed = tonumber(r.tts_speed or 0) or 0,
+                    tts_return_smooth = r.tts_return_smooth == true,
                     prompt_id = tostring(r.prompt_id or ""),
                     prompt_route = tostring(r.prompt_route or ""),
                     prompt_wav_path = tostring(r.prompt_wav_path or ""),
                     prompt_manifest_path = tostring(r.prompt_manifest_path or ""),
                     prompt_pool_name = tostring(r.prompt_pool_name or ""),
+                    tts_created_at = tonumber(r.created_at or 0) or 0,
+                    tts_finished_at = tonumber(r.finished_at or 0) or 0,
+                    tts_latency_ms = tonumber(r.tts_latency_ms or 0) or 0,
                 })
                 if cfg.print_to_stdout == true then
                     local seg_text = trim(tostring(r.text or ""))
@@ -255,9 +266,10 @@ local function drain_tts(bus, ctx, cfg, canceled_intents)
                     end
                     bus:emit(protocol.events.OUTPUT_PRINT, {
                         text = string.format(
-                            "tts> done turn=%d seg=%d text=%s",
+                            "tts> done turn=%d seg=%d latency=%.0fms text=%s",
                             tonumber(r.turn or 0) or 0,
                             tonumber(r.segment_idx or 0) or 0,
+                            tonumber(r.tts_latency_ms or 0) or 0,
                             seg_text
                         ),
                     })

@@ -1,0 +1,302 @@
+{
+  "config_path": "/home/morusa/AI/mori/mori.config.json",
+  "out_dir": "/home/morusa/AI/mori/tts_out/bench_zipvoice_distill",
+  "engine_init_s": 8.127781547999803,
+  "params": {
+    "num_steps": 8,
+    "guidance_scale": 1.0,
+    "t_shift": 0.5,
+    "speed": 1.0,
+    "return_smooth": false
+  },
+  "prompt_manifest": "/home/morusa/AI/mori/mori_runtime/prompts/zipvoice_zhja_dual_prompt_manifest.tsv",
+  "zipvoice_num_thread": 1,
+  "prompt_cache_stats": {
+    "zh": {
+      "prompt_duration": 3.267916666666667,
+      "prompt_frames": 306,
+      "prompt_feature_dim": 100,
+      "prompt_feature_bytes": 122400,
+      "prompt_tokens": 31
+    },
+    "ja": {
+      "prompt_duration": 2.4679166666666665,
+      "prompt_frames": 231,
+      "prompt_feature_dim": 100,
+      "prompt_feature_bytes": 92400,
+      "prompt_tokens": 35
+    }
+  },
+  "results": [
+    {
+      "scenario": "zh_ack",
+      "lang_hint": "zh",
+      "segmented": false,
+      "segments_text": [
+        "嗯，大家晚上好，今天状态不错，我们先轻松聊聊天。"
+      ],
+      "parts": [
+        {
+          "segment_idx": 1,
+          "text": "嗯，大家晚上好，今天状态不错，我们先轻松聊聊天。",
+          "chars": 24,
+          "latency_s": 1.408225262999622,
+          "audio_s": 4.259,
+          "rtf": 0.330646927212872,
+          "wav_path": "/home/morusa/AI/mori/tts_out/bench_zipvoice_distill/zh_ack_part01.wav",
+          "tts_route": "zh",
+          "tts_lang": "en-us",
+          "tts_tokenizer": "emilia",
+          "prompt_id": "cute_0045"
+        }
+      ],
+      "summary": {
+        "segments": 1,
+        "first_audio_ready_s": 1.408225262999622,
+        "total_synth_s": 1.408225262999622,
+        "total_audio_s": 4.259,
+        "steady_state_backlog_s": 0.0,
+        "overall_rtf": 0.330646927212872
+      }
+    },
+    {
+      "scenario": "zh_answer",
+      "lang_hint": "zh",
+      "segmented": false,
+      "segments_text": [
+        "这个问题我先给一个直接结论，再补充原因，这样你听起来不会太累。"
+      ],
+      "parts": [
+        {
+          "segment_idx": 1,
+          "text": "这个问题我先给一个直接结论，再补充原因，这样你听起来不会太累。",
+          "chars": 31,
+          "latency_s": 1.1724197240000649,
+          "audio_s": 5.938,
+          "rtf": 0.19744353721792943,
+          "wav_path": "/home/morusa/AI/mori/tts_out/bench_zipvoice_distill/zh_answer_part01.wav",
+          "tts_route": "zh",
+          "tts_lang": "en-us",
+          "tts_tokenizer": "emilia",
+          "prompt_id": "cute_0045"
+        }
+      ],
+      "summary": {
+        "segments": 1,
+        "first_audio_ready_s": 1.1724197240000649,
+        "total_synth_s": 1.1724197240000649,
+        "total_audio_s": 5.938,
+        "steady_state_backlog_s": 0.0,
+        "overall_rtf": 0.19744353721792943
+      }
+    },
+    {
+      "scenario": "ja_answer",
+      "lang_hint": "ja",
+      "segmented": false,
+      "segments_text": [
+        "こんばんは、今日は少しだけ雑談してから、配信の流れを整えていくよ。"
+      ],
+      "parts": [
+        {
+          "segment_idx": 1,
+          "text": "こんばんは、今日は少しだけ雑談してから、配信の流れを整えていくよ。",
+          "chars": 33,
+          "latency_s": 0.8002801479997288,
+          "audio_s": 6.011,
+          "rtf": 0.1331359421060936,
+          "wav_path": "/home/morusa/AI/mori/tts_out/bench_zipvoice_distill/ja_answer_part01.wav",
+          "tts_route": "ja",
+          "tts_lang": "ja",
+          "tts_tokenizer": "openjtalk",
+          "prompt_id": "afw_ssxjPhXc_short"
+        }
+      ],
+      "summary": {
+        "segments": 1,
+        "first_audio_ready_s": 0.8002801479997288,
+        "total_synth_s": 0.8002801479997288,
+        "total_audio_s": 6.011,
+        "steady_state_backlog_s": 0.0,
+        "overall_rtf": 0.1331359421060936
+      }
+    },
+    {
+      "scenario": "mixed_switch",
+      "lang_hint": "",
+      "segmented": false,
+      "segments_text": [
+        "这段先用中文说明一下，最后补一句 arigatou，看看混合文本时路由会不会卡住。"
+      ],
+      "parts": [
+        {
+          "segment_idx": 1,
+          "text": "这段先用中文说明一下，最后补一句 arigatou，看看混合文本时路由会不会卡住。",
+          "chars": 41,
+          "latency_s": 0.7160659020000821,
+          "audio_s": 7.05,
+          "rtf": 0.10156963148937335,
+          "wav_path": "/home/morusa/AI/mori/tts_out/bench_zipvoice_distill/mixed_switch_part01.wav",
+          "tts_route": "zh",
+          "tts_lang": "en-us",
+          "tts_tokenizer": "emilia",
+          "prompt_id": "cute_0045"
+        }
+      ],
+      "summary": {
+        "segments": 1,
+        "first_audio_ready_s": 0.7160659020000821,
+        "total_synth_s": 0.7160659020000821,
+        "total_audio_s": 7.05,
+        "steady_state_backlog_s": 0.0,
+        "overall_rtf": 0.10156963148937335
+      }
+    },
+    {
+      "scenario": "vtuber_cn_long",
+      "lang_hint": "zh",
+      "segmented": true,
+      "segments_text": [
+        "今天这个模型的响应其实比我预想的稳定。",
+        "如果我们把回答切成比较自然的短句，",
+        "它就能更早开始说话，观感会好很多。",
+        "真正需要担心的反而不是单句速度，而是连续三四段的时候会不会越积越慢。"
+      ],
+      "parts": [
+        {
+          "segment_idx": 1,
+          "text": "今天这个模型的响应其实比我预想的稳定。",
+          "chars": 19,
+          "latency_s": 0.6740397639996445,
+          "audio_s": 3.553,
+          "rtf": 0.1897100377145073,
+          "wav_path": "/home/morusa/AI/mori/tts_out/bench_zipvoice_distill/vtuber_cn_long_part01.wav",
+          "tts_route": "zh",
+          "tts_lang": "en-us",
+          "tts_tokenizer": "emilia",
+          "prompt_id": "cute_0045"
+        },
+        {
+          "segment_idx": 2,
+          "text": "如果我们把回答切成比较自然的短句，",
+          "chars": 17,
+          "latency_s": 0.6744336830006432,
+          "audio_s": 3.297,
+          "rtf": 0.2045598067942503,
+          "wav_path": "/home/morusa/AI/mori/tts_out/bench_zipvoice_distill/vtuber_cn_long_part02.wav",
+          "tts_route": "zh",
+          "tts_lang": "en-us",
+          "tts_tokenizer": "emilia",
+          "prompt_id": "cute_0045"
+        },
+        {
+          "segment_idx": 3,
+          "text": "它就能更早开始说话，观感会好很多。",
+          "chars": 17,
+          "latency_s": 0.6912200679998932,
+          "audio_s": 3.2,
+          "rtf": 0.21600627124996663,
+          "wav_path": "/home/morusa/AI/mori/tts_out/bench_zipvoice_distill/vtuber_cn_long_part03.wav",
+          "tts_route": "zh",
+          "tts_lang": "en-us",
+          "tts_tokenizer": "emilia",
+          "prompt_id": "cute_0045"
+        },
+        {
+          "segment_idx": 4,
+          "text": "真正需要担心的反而不是单句速度，而是连续三四段的时候会不会越积越慢。",
+          "chars": 34,
+          "latency_s": 0.7162244549999741,
+          "audio_s": 6.381,
+          "rtf": 0.11224329337094094,
+          "wav_path": "/home/morusa/AI/mori/tts_out/bench_zipvoice_distill/vtuber_cn_long_part04.wav",
+          "tts_route": "zh",
+          "tts_lang": "en-us",
+          "tts_tokenizer": "emilia",
+          "prompt_id": "cute_0045"
+        }
+      ],
+      "summary": {
+        "segments": 4,
+        "first_audio_ready_s": 0.6740397639996445,
+        "total_synth_s": 2.755917970000155,
+        "total_audio_s": 16.431,
+        "steady_state_backlog_s": 0.0,
+        "overall_rtf": 0.16772673422190706
+      }
+    },
+    {
+      "scenario": "vtuber_ja_long",
+      "lang_hint": "ja",
+      "segmented": true,
+      "segments_text": [
+        "今日は配信向けの遅延をちゃんと見たい。",
+        "短い文ならすぐ話し始められるのか、",
+        "長めの説明でもテンポが崩れないのか。",
+        "そこが大丈夫なら、実戦でもかなり使いやすくなる。"
+      ],
+      "parts": [
+        {
+          "segment_idx": 1,
+          "text": "今日は配信向けの遅延をちゃんと見たい。",
+          "chars": 19,
+          "latency_s": 0.6991496180007744,
+          "audio_s": 2.697,
+          "rtf": 0.2592323388953557,
+          "wav_path": "/home/morusa/AI/mori/tts_out/bench_zipvoice_distill/vtuber_ja_long_part01.wav",
+          "tts_route": "ja",
+          "tts_lang": "ja",
+          "tts_tokenizer": "openjtalk",
+          "prompt_id": "afw_ssxjPhXc_short"
+        },
+        {
+          "segment_idx": 2,
+          "text": "短い文ならすぐ話し始められるのか、",
+          "chars": 17,
+          "latency_s": 0.7081975490000332,
+          "audio_s": 3.343,
+          "rtf": 0.21184491444811043,
+          "wav_path": "/home/morusa/AI/mori/tts_out/bench_zipvoice_distill/vtuber_ja_long_part02.wav",
+          "tts_route": "ja",
+          "tts_lang": "ja",
+          "tts_tokenizer": "openjtalk",
+          "prompt_id": "afw_ssxjPhXc_short"
+        },
+        {
+          "segment_idx": 3,
+          "text": "長めの説明でもテンポが崩れないのか。",
+          "chars": 18,
+          "latency_s": 0.6911639650006691,
+          "audio_s": 3.344,
+          "rtf": 0.20668778857675513,
+          "wav_path": "/home/morusa/AI/mori/tts_out/bench_zipvoice_distill/vtuber_ja_long_part03.wav",
+          "tts_route": "ja",
+          "tts_lang": "ja",
+          "tts_tokenizer": "openjtalk",
+          "prompt_id": "afw_ssxjPhXc_short"
+        },
+        {
+          "segment_idx": 4,
+          "text": "そこが大丈夫なら、実戦でもかなり使いやすくなる。",
+          "chars": 24,
+          "latency_s": 0.7163989989994661,
+          "audio_s": 4.108,
+          "rtf": 0.17439118768244066,
+          "wav_path": "/home/morusa/AI/mori/tts_out/bench_zipvoice_distill/vtuber_ja_long_part04.wav",
+          "tts_route": "ja",
+          "tts_lang": "ja",
+          "tts_tokenizer": "openjtalk",
+          "prompt_id": "afw_ssxjPhXc_short"
+        }
+      ],
+      "summary": {
+        "segments": 4,
+        "first_audio_ready_s": 0.6991496180007744,
+        "total_synth_s": 2.814910131000943,
+        "total_audio_s": 13.492,
+        "steady_state_backlog_s": 0.0,
+        "overall_rtf": 0.20863549740594
+      }
+    }
+  ]
+}

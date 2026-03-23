@@ -72,6 +72,18 @@ bash mori_tts/scripts/install_lux_tts.sh
 
 默认模型使用 Hugging Face 上的 `YatharthS/LuxTTS`，首次运行时会自动下载到本机缓存。
 
+如果你走的是 `backend=zipvoice`，并且想启用仓库里现在默认接上的 `Lux 48k vocoder`，还需要给 `zipvoice` 那个独立虚拟环境补一个依赖：
+
+```bash
+/home/morusa/dataset/train/zipvoice-env/bin/pip install \
+  git+https://github.com/ysharma3501/LinaCodec.git
+```
+
+`mori.config.json` 里现在也支持 `zipvoice_quality_profile` 和 `zipvoice_vocoder_profile`；推荐先用：
+
+- `zipvoice_quality_profile = balanced`
+- `zipvoice_vocoder_profile = lux_48k`
+
 ## 运行
 
 如果已经写好 `mori.config.json`，最简单就是：
