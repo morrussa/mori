@@ -371,9 +371,18 @@ class EmbeddingPyPipelineAdapter:
             gpu_layers=str(gpu_layers),
             startup_timeout_s=int(startup_timeout_s),
         )
-        self.get_embedding = lambda _self, text, mode="query": self.get_embedding_py(text=text, mode=mode)
-        self.get_embeddings = lambda _self, texts, mode="query": self.get_embeddings_py(texts=texts, mode=mode)
-        self.generate_chat_sync = lambda _self, messages, params=None: ""
+
+    # Lua bridge entrypoints: keep positional args for `obj:method(...)` calls.
+    def get_embedding(self, text: object, mode: object = "query") -> list[float]:
+        return self.get_embedding_py(text=text, mode=mode)
+
+    def get_embeddings(self, texts: object, mode: object = "query") -> list[list[float]]:
+        return self.get_embeddings_py(texts=texts, mode=mode)
+
+    def generate_chat_sync(self, messages: object, params: object | None = None) -> str:
+        _ = messages
+        _ = params
+        return ""
 
     @staticmethod
     def _normalize(vec: list[float]) -> list[float]:
