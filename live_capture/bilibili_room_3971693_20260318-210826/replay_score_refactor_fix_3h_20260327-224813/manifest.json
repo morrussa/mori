@@ -1,0 +1,22 @@
+{
+  "created_at": 1774623246.1272044,
+  "created_at_iso": "2026-03-27T22:54:06+0800",
+  "repo_root": "/home/morusa/AI/mori",
+  "source_run_dir": "/home/morusa/AI/mori/live_capture/bilibili_room_3971693_20260318-210826",
+  "output_run_dir": "/home/morusa/AI/mori/live_capture/bilibili_room_3971693_20260318-210826/replay_score_refactor_fix_3h_20260327-224813",
+  "strategy_profile": "live_room",
+  "memory_profile": "capture",
+  "phase0_probe": false,
+  "files": {
+    "replay_memory_trace": "/home/morusa/AI/mori/live_capture/bilibili_room_3971693_20260318-210826/replay_score_refactor_fix_3h_20260327-224813/memory_trace.jsonl",
+    "replay_summary": "/home/morusa/AI/mori/live_capture/bilibili_room_3971693_20260318-210826/replay_score_refactor_fix_3h_20260327-224813/summary.json",
+    "baseline_memory_trace": "/home/morusa/AI/mori/live_capture/bilibili_room_3971693_20260318-210826/replay_score_codex_20260325/memory_trace.jsonl",
+    "baseline_summary": "/home/morusa/AI/mori/live_capture/bilibili_room_3971693_20260318-210826/replay_score_codex_20260325/summary.json"
+  },
+  "window": {
+    "hours": 3,
+    "selected_messages": 2184,
+    "selected_turn_min": 1,
+    "selected_turn_max": 2184
+  }
+}

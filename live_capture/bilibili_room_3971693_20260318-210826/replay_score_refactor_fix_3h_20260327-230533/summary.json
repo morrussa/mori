@@ -1,0 +1,314 @@
+{
+  "finished_at": 1774624394.040933,
+  "finished_at_iso": "2026-03-27T23:13:14+0800",
+  "duration_s": 460.325,
+  "source_run_dir": "/home/morusa/AI/mori/live_capture/bilibili_room_3971693_20260318-210826",
+  "output_run_dir": "/home/morusa/AI/mori/live_capture/bilibili_room_3971693_20260318-210826/replay_score_refactor_fix_3h_20260327-230533",
+  "window_hours": 3,
+  "window_start_ts": 1773839302.0,
+  "window_end_ts": 1773850102.0,
+  "window_start_iso": "2026-03-18T21:08:22+0800",
+  "window_end_iso": "2026-03-19T00:08:22+0800",
+  "processed_messages": 2184,
+  "turns_attempted": 2184,
+  "error_count": 0,
+  "ingest_error_counts": {},
+  "compile_ms": {
+    "count": 2184,
+    "p50_ms": 25.181,
+    "p95_ms": 35.681,
+    "max_ms": 83.754
+  },
+  "ingest_ms": {
+    "count": 2184,
+    "p50_ms": 149.393,
+    "p95_ms": 339.09,
+    "max_ms": 1724.46
+  },
+  "avg_context_chars": 332.82,
+  "empty_context_rate": 0.0,
+  "flow_reason_counts": {
+    "ambient_attach": 38,
+    "assign": 41,
+    "attach_reaction": 137,
+    "attach_recent": 72,
+    "create": 12,
+    "keep_pending": 129,
+    "keep_pending_conservative": 58,
+    "merge": 5,
+    "orphan_overflow": 576,
+    "promote_orphan": 149,
+    "reset_topic": 26,
+    "tree_attach": 529,
+    "tree_open": 15,
+    "tree_pending": 397
+  },
+  "flow_mode_counts": {
+    "single": 119,
+    "split": 2065
+  },
+  "flag_counts": {
+    "is_new": 603,
+    "local_only": 1198,
+    "merged": 5,
+    "orphaned": 779,
+    "pending_only": 1198
+  },
+  "room": {
+    "room_id": 3971693,
+    "live_status": 0,
+    "title": "电工工作已离职，全职干直播！",
+    "online": 0,
+    "live_time": "0000-00-00 00:00:00",
+    "raw": {
+      "room_id": 3971693,
+      "live_status": 0,
+      "title": "电工工作已离职，全职干直播！",
+      "online": 0,
+      "live_time": "0000-00-00 00:00:00",
+      "up_session": "",
+      "pk_status": 0,
+      "pk_id": 0,
+      "parent_area_name": "网游",
+      "allow_change_area_time": 0,
+      "background": "",
+      "is_strict_room": false,
+      "tags": "守望先锋,路霸,ow,小金猪,守望先锋归来,守望先锋2,游戏",
+      "room_silent_level": 0,
+      "room_silent_second": 0,
+      "area_name": "守望先锋",
+      "area_pendants": "",
+      "hot_words": {
+        "1": "2333333",
+        "2": "喂，妖妖零吗",
+        "3": "红红火火恍恍惚惚",
+        "4": "FFFFFFFFFF",
+        "5": "Yooooooo",
+        "6": "啪啪啪啪啪",
+        "7": "666666666",
+        "8": "老司机带带我",
+        "9": "你为什么这么熟练啊",
+        "10": "gg",
+        "11": "prprpr",
+        "12": "向大佬低头",
+        "13": "请大家注意弹幕礼仪哦！",
+        "14": "还有这种操作！",
+        "15": "囍",
+        "16": "打call",
+        "17": "你气不气？",
+        "18": "队友呢？"
+      },
+      "parent_area_id": 2,
+      "pendants": "",
+      "keyframe": "",
+      "short_id": 0,
+      "attention": 56013,
+      "is_portrait": false,
+      "description": "国服亚服双英杰路霸，最强路霸，16年打到现在，最高国服第三，4600分留榜前十。",
+      "studio_info": {
+        "status": 0,
+        "master_list": {}
+      },
+      "allow_upload_cover_time": 0,
+      "battle_id": 0,
+      "room_silent_type": "",
+      "is_anchor": 0,
+      "hot_words_status": 0,
+      "verify": "",
+      "new_pendants": {
+        "frame": {
+          "value": "https://i0.hdslb.com/bfs/vc/071eb10548fe9bc482ff69331983d94192ce9507.png",
+          "position": 0,
+          "desc": "",
+          "area": 0,
+          "area_old": 0,
+          "bg_color": "",
+          "bg_pic": "",
+          "use_old_area": false,
+          "name": "百人舰队主播头像"
+        },
+        "mobile_frame": {
+          "value": "https://i0.hdslb.com/bfs/vc/071eb10548fe9bc482ff69331983d94192ce9507.png",
+          "position": 0,
+          "desc": "",
+          "area": 0,
+          "area_old": 0,
+          "bg_color": "",
+          "bg_pic": "",
+          "use_old_area": false,
+          "name": "百人舰队主播头像"
+        }
+      },
+      "uid": 23486547,
+      "user_cover": "https://i0.hdslb.com/bfs/live/new_room_cover/6298a4412f6bee8b2e43f9d38142038492235278.jpg",
+      "old_area_id": 3,
+      "area_id": 87
+    }
+  },
+  "phase0_probe": null,
+  "baseline_compare": {
+    "baseline_turns": 2184,
+    "reason_match_rate": 0.3205,
+    "mode_match_rate": 0.9505,
+    "exact_flow_match_rate": 0.3114,
+    "flag_match_rate": {
+      "dropped": 1.0,
+      "pending_only": 0.7418,
+      "local_only": 0.7418,
+      "orphaned": 0.7962,
+      "is_new": 0.755,
+      "merged": 0.9982
+    },
+    "context_block_count_match_rate": 0.5563,
+    "retrieved_turns_exact_match_rate": 0.3512,
+    "retrieved_turns_jaccard_mean": 0.4191,
+    "avg_context_block_count_abs_diff": 0.886,
+    "avg_context_char_abs_diff": 108.4588,
+    "flow_reason_count_delta": {
+      "keep_pending": 52,
+      "keep_pending_conservative": 58,
+      "promote_orphan": 68,
+      "reset_topic": 11,
+      "tree_attach": 529,
+      "tree_open": 15,
+      "tree_pending": 397
+    },
+    "flow_mode_count_delta": {
+      "single": 102
+    },
+    "flag_count_delta": {},
+    "diff_examples": [
+      {
+        "turn": 2,
+        "text": "这样才有节目效果",
+        "baseline_reason": "create",
+        "replay_reason": "reset_topic",
+        "baseline_mode": "split",
+        "replay_mode": "single",
+        "baseline_context_block_count": 1,
+        "replay_context_block_count": 3,
+        "baseline_retrieved_turns": [],
+        "replay_retrieved_turns": [
+          1
+        ]
+      },
+      {
+        "turn": 3,
+        "text": "等级森严[妙]",
+        "baseline_reason": "create",
+        "replay_reason": "keep_pending_conservative",
+        "baseline_mode": "split",
+        "replay_mode": "single",
+        "baseline_context_block_count": 1,
+        "replay_context_block_count": 3,
+        "baseline_retrieved_turns": [],
+        "replay_retrieved_turns": [
+          2
+        ]
+      },
+      {
+        "turn": 4,
+        "text": "666",
+        "baseline_reason": "attach_recent",
+        "replay_reason": "attach_recent",
+        "baseline_mode": "split",
+        "replay_mode": "single",
+        "baseline_context_block_count": 3,
+        "replay_context_block_count": 5,
+        "baseline_retrieved_turns": [
+          3
+        ],
+        "replay_retrieved_turns": [
+          1,
+          2,
+          3
+        ]
+      },
+      {
+        "turn": 5,
+        "text": "这是真红了",
+        "baseline_reason": "attach_recent",
+        "replay_reason": "reset_topic",
+        "baseline_mode": "split",
+        "replay_mode": "single",
+        "baseline_context_block_count": 3,
+        "replay_context_block_count": 5,
+        "baseline_retrieved_turns": [
+          4
+        ],
+        "replay_retrieved_turns": [
+          1,
+          4
+        ]
+      },
+      {
+        "turn": 6,
+        "text": "红了",
+        "baseline_reason": "attach_reaction",
+        "replay_reason": "assign",
+        "baseline_mode": "split",
+        "replay_mode": "single",
+        "baseline_context_block_count": 3,
+        "replay_context_block_count": 5,
+        "baseline_retrieved_turns": [
+          5
+        ],
+        "replay_retrieved_turns": [
+          1,
+          5
+        ]
+      },
+      {
+        "turn": 7,
+        "text": "小红猪",
+        "baseline_reason": "attach_reaction",
+        "replay_reason": "reset_topic",
+        "baseline_mode": "split",
+        "replay_mode": "single",
+        "baseline_context_block_count": 3,
+        "replay_context_block_count": 5,
+        "baseline_retrieved_turns": [
+          6
+        ],
+        "replay_retrieved_turns": [
+          1,
+          6
+        ]
+      },
+      {
+        "turn": 8,
+        "text": "不说话了",
+        "baseline_reason": "attach_reaction",
+        "replay_reason": "tree_attach",
+        "baseline_mode": "split",
+        "replay_mode": "single",
+        "baseline_context_block_count": 3,
+        "replay_context_block_count": 5,
+        "baseline_retrieved_turns": [
+          7
+        ],
+        "replay_retrieved_turns": [
+          1,
+          7
+        ]
+      },
+      {
+        "turn": 9,
+        "text": "有点难受了",
+        "baseline_reason": "attach_reaction",
+        "replay_reason": "attach_reaction",
+        "baseline_mode": "split",
+        "replay_mode": "single",
+        "baseline_context_block_count": 3,
+        "replay_context_block_count": 5,
+        "baseline_retrieved_turns": [
+          8
+        ],
+        "replay_retrieved_turns": [
+          1,
+          8
+        ]
+      }
+    ]
+  }
+}
