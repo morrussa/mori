@@ -23,4 +23,6 @@ live/
 .codebuddy/
 langgraph-main(example)/
 /.venv/
-.claude
+.claude/
+CLAUDE.md
+**/CLAUDE.md
