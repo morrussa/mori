@@ -1,0 +1,553 @@
+{
+  "finished_at": 1774667026.0625389,
+  "finished_at_iso": "2026-03-28T11:03:46+0800",
+  "duration_s": 696.398,
+  "source_run_dir": "/home/morusa/AI/mori/live_capture/bilibili_room_3971693_20260318-210826",
+  "output_run_dir": "/home/morusa/AI/mori/live_capture/bilibili_room_3971693_20260318-210826/replay_score_cleanup_reaction_3h_20260328-1028",
+  "processed_messages": 2184,
+  "turns_attempted": 2184,
+  "error_count": 0,
+  "compile_ms": {
+    "count": 2184,
+    "p50_ms": 23.011,
+    "p95_ms": 35.78,
+    "max_ms": 82.066
+  },
+  "ingest_ms": {
+    "count": 2184,
+    "p50_ms": 267.88,
+    "p95_ms": 535.498,
+    "max_ms": 2389.761
+  },
+  "avg_context_chars": 273.51,
+  "empty_context_rate": 0.0,
+  "flow_reason_counts": {
+    "ambient_attach": 786,
+    "assign": 75,
+    "create": 6,
+    "keep_pending": 187,
+    "keep_pending_open_threshold": 33,
+    "keep_pending_reaction": 20,
+    "keep_pending_recent_reaction": 44,
+    "orphan_overflow": 890,
+    "promote_orphan": 95,
+    "reset_topic": 48
+  },
+  "flow_mode_counts": {
+    "single": 87,
+    "split": 2097
+  },
+  "flag_counts": {
+    "is_new": 896,
+    "local_only": 1960,
+    "orphaned": 1019,
+    "pending_only": 1960
+  },
+  "room": {
+    "room_id": 3971693,
+    "live_status": 1,
+    "title": "电工工作已离职，全职干直播！",
+    "online": 56983,
+    "live_time": "2026-03-18 20:03:07",
+    "raw": {
+      "keyframe": "https://i0.hdslb.com/bfs/live-key-frame/keyframe03182106000003971693yh8n61.jpg",
+      "room_id": 3971693,
+      "is_strict_room": false,
+      "tags": "守望先锋,路霸,ow,小金猪,守望先锋归来,守望先锋2,游戏",
+      "live_status": 1,
+      "title": "电工工作已离职，全职干直播！",
+      "online": 56983,
+      "live_time": "2026-03-18 20:03:07",
+      "hot_words_status": 0,
+      "verify": "",
+      "new_pendants": {
+        "mobile_frame": {
+          "value": "https://i0.hdslb.com/bfs/vc/071eb10548fe9bc482ff69331983d94192ce9507.png",
+          "position": 0,
+          "desc": "",
+          "area": 0,
+          "area_old": 0,
+          "bg_color": "",
+          "bg_pic": "",
+          "use_old_area": false,
+          "name": "百人舰队主播头像"
+        },
+        "frame": {
+          "value": "https://i0.hdslb.com/bfs/vc/071eb10548fe9bc482ff69331983d94192ce9507.png",
+          "position": 0,
+          "desc": "",
+          "area": 0,
+          "area_old": 0,
+          "bg_color": "",
+          "bg_pic": "",
+          "use_old_area": false,
+          "name": "百人舰队主播头像"
+        }
+      },
+      "is_anchor": 0,
+      "room_silent_type": "",
+      "room_silent_level": 0,
+      "room_silent_second": 0,
+      "area_name": "守望先锋",
+      "pendants": "",
+      "area_pendants": "",
+      "hot_words": {
+        "1": "2333333",
+        "2": "喂，妖妖零吗",
+        "3": "红红火火恍恍惚惚",
+        "4": "FFFFFFFFFF",
+        "5": "Yooooooo",
+        "6": "啪啪啪啪啪",
+        "7": "666666666",
+        "8": "老司机带带我",
+        "9": "你为什么这么熟练啊",
+        "10": "gg",
+        "11": "prprpr",
+        "12": "向大佬低头",
+        "13": "请大家注意弹幕礼仪哦！",
+        "14": "还有这种操作！",
+        "15": "囍",
+        "16": "打call",
+        "17": "你气不气？",
+        "18": "队友呢？"
+      },
+      "area_id": 87,
+      "up_session": "684169611444001389",
+      "parent_area_name": "网游",
+      "pk_status": 0,
+      "pk_id": 0,
+      "old_area_id": 3,
+      "allow_change_area_time": 0,
+      "background": "",
+      "studio_info": {
+        "status": 0,
+        "master_list": {}
+      },
+      "short_id": 0,
+      "attention": 55902,
+      "is_portrait": false,
+      "description": "国服亚服双英杰路霸，最强路霸，16年打到现在，最高国服第三，4600分留榜前十。",
+      "user_cover": "https://i0.hdslb.com/bfs/live/new_room_cover/6298a4412f6bee8b2e43f9d38142038492235278.jpg",
+      "allow_upload_cover_time": 0,
+      "battle_id": 0,
+      "parent_area_id": 2,
+      "uid": 23486547
+    }
+  },
+  "phase0_probe": null,
+  "baseline_compare": {
+    "baseline_turns": 2184,
+    "reason_match_rate": 0.4203,
+    "mode_match_rate": 0.9606,
+    "exact_flow_match_rate": 0.4171,
+    "flag_match_rate": {
+      "dropped": 1.0,
+      "pending_only": 0.897,
+      "local_only": 0.897,
+      "orphaned": 0.5156,
+      "is_new": 0.4876,
+      "merged": 1.0
+    },
+    "context_block_count_match_rate": 0.4103,
+    "retrieved_turns_exact_match_rate": 0.4309,
+    "retrieved_turns_jaccard_mean": 0.4465,
+    "avg_context_block_count_abs_diff": 1.1694,
+    "avg_context_char_abs_diff": 118.4556,
+    "flow_reason_count_delta": {
+      "ambient_attach": 786,
+      "assign": 11,
+      "create": -1,
+      "keep_pending": 43,
+      "keep_pending_open_threshold": 33,
+      "keep_pending_reaction": 20,
+      "keep_pending_recent_reaction": 44,
+      "orphan_overflow": -1927,
+      "promote_orphan": -41,
+      "reset_topic": 48
+    },
+    "flow_mode_count_delta": {
+      "single": 86,
+      "split": -1070
+    },
+    "flag_count_delta": {
+      "is_new": -1928,
+      "local_only": -1001,
+      "orphaned": -1916,
+      "pending_only": -1001
+    },
+    "diff_examples": [
+      {
+        "turn": 2,
+        "text": "这样才有节目效果",
+        "baseline_reason": "create",
+        "replay_reason": "reset_topic",
+        "baseline_mode": "split",
+        "replay_mode": "single",
+        "baseline_flags": {
+          "dropped": false,
+          "pending_only": false,
+          "local_only": false,
+          "orphaned": false,
+          "is_new": true,
+          "merged": false
+        },
+        "replay_flags": {
+          "dropped": false,
+          "pending_only": false,
+          "local_only": false,
+          "orphaned": false,
+          "is_new": false,
+          "merged": false
+        },
+        "baseline_context_block_count": 1,
+        "replay_context_block_count": 3,
+        "baseline_retrieved_turns": [],
+        "replay_retrieved_turns": [
+          1
+        ]
+      },
+      {
+        "turn": 3,
+        "text": "等级森严[妙]",
+        "baseline_reason": "create",
+        "replay_reason": "reset_topic",
+        "baseline_mode": "split",
+        "replay_mode": "single",
+        "baseline_flags": {
+          "dropped": false,
+          "pending_only": false,
+          "local_only": false,
+          "orphaned": false,
+          "is_new": true,
+          "merged": false
+        },
+        "replay_flags": {
+          "dropped": false,
+          "pending_only": false,
+          "local_only": false,
+          "orphaned": false,
+          "is_new": false,
+          "merged": false
+        },
+        "baseline_context_block_count": 1,
+        "replay_context_block_count": 5,
+        "baseline_retrieved_turns": [],
+        "replay_retrieved_turns": [
+          1,
+          2
+        ]
+      },
+      {
+        "turn": 4,
+        "text": "666",
+        "baseline_reason": "orphan_overflow",
+        "replay_reason": "reset_topic",
+        "baseline_mode": "split",
+        "replay_mode": "single",
+        "baseline_flags": {
+          "dropped": false,
+          "pending_only": true,
+          "local_only": true,
+          "orphaned": true,
+          "is_new": true,
+          "merged": false
+        },
+        "replay_flags": {
+          "dropped": false,
+          "pending_only": false,
+          "local_only": false,
+          "orphaned": false,
+          "is_new": false,
+          "merged": false
+        },
+        "baseline_context_block_count": 1,
+        "replay_context_block_count": 5,
+        "baseline_retrieved_turns": [],
+        "replay_retrieved_turns": [
+          1,
+          3
+        ]
+      },
+      {
+        "turn": 5,
+        "text": "这是真红了",
+        "baseline_reason": "orphan_overflow",
+        "replay_reason": "reset_topic",
+        "baseline_mode": "split",
+        "replay_mode": "single",
+        "baseline_flags": {
+          "dropped": false,
+          "pending_only": true,
+          "local_only": true,
+          "orphaned": true,
+          "is_new": true,
+          "merged": false
+        },
+        "replay_flags": {
+          "dropped": false,
+          "pending_only": false,
+          "local_only": false,
+          "orphaned": false,
+          "is_new": false,
+          "merged": false
+        },
+        "baseline_context_block_count": 1,
+        "replay_context_block_count": 5,
+        "baseline_retrieved_turns": [],
+        "replay_retrieved_turns": [
+          1,
+          4
+        ]
+      },
+      {
+        "turn": 6,
+        "text": "红了",
+        "baseline_reason": "keep_pending",
+        "replay_reason": "assign",
+        "baseline_mode": "split",
+        "replay_mode": "single",
+        "baseline_flags": {
+          "dropped": false,
+          "pending_only": true,
+          "local_only": true,
+          "orphaned": true,
+          "is_new": false,
+          "merged": false
+        },
+        "replay_flags": {
+          "dropped": false,
+          "pending_only": false,
+          "local_only": false,
+          "orphaned": false,
+          "is_new": false,
+          "merged": false
+        },
+        "baseline_context_block_count": 2,
+        "replay_context_block_count": 5,
+        "baseline_retrieved_turns": [
+          5
+        ],
+        "replay_retrieved_turns": [
+          1,
+          5
+        ]
+      },
+      {
+        "turn": 7,
+        "text": "小红猪",
+        "baseline_reason": "orphan_overflow",
+        "replay_reason": "reset_topic",
+        "baseline_mode": "split",
+        "replay_mode": "single",
+        "baseline_flags": {
+          "dropped": false,
+          "pending_only": true,
+          "local_only": true,
+          "orphaned": true,
+          "is_new": true,
+          "merged": false
+        },
+        "replay_flags": {
+          "dropped": false,
+          "pending_only": false,
+          "local_only": false,
+          "orphaned": false,
+          "is_new": false,
+          "merged": false
+        },
+        "baseline_context_block_count": 1,
+        "replay_context_block_count": 5,
+        "baseline_retrieved_turns": [],
+        "replay_retrieved_turns": [
+          1,
+          6
+        ]
+      },
+      {
+        "turn": 8,
+        "text": "不说话了",
+        "baseline_reason": "orphan_overflow",
+        "replay_reason": "reset_topic",
+        "baseline_mode": "split",
+        "replay_mode": "single",
+        "baseline_flags": {
+          "dropped": false,
+          "pending_only": true,
+          "local_only": true,
+          "orphaned": true,
+          "is_new": true,
+          "merged": false
+        },
+        "replay_flags": {
+          "dropped": false,
+          "pending_only": false,
+          "local_only": false,
+          "orphaned": false,
+          "is_new": false,
+          "merged": false
+        },
+        "baseline_context_block_count": 1,
+        "replay_context_block_count": 5,
+        "baseline_retrieved_turns": [],
+        "replay_retrieved_turns": [
+          1,
+          7
+        ]
+      },
+      {
+        "turn": 9,
+        "text": "有点难受了",
+        "baseline_reason": "orphan_overflow",
+        "replay_reason": "reset_topic",
+        "baseline_mode": "split",
+        "replay_mode": "single",
+        "baseline_flags": {
+          "dropped": false,
+          "pending_only": true,
+          "local_only": true,
+          "orphaned": true,
+          "is_new": true,
+          "merged": false
+        },
+        "replay_flags": {
+          "dropped": false,
+          "pending_only": false,
+          "local_only": false,
+          "orphaned": false,
+          "is_new": false,
+          "merged": false
+        },
+        "baseline_context_block_count": 1,
+        "replay_context_block_count": 5,
+        "baseline_retrieved_turns": [],
+        "replay_retrieved_turns": [
+          1,
+          8
+        ]
+      },
+      {
+        "turn": 10,
+        "text": "T位玩家能代入吗",
+        "baseline_reason": "orphan_overflow",
+        "replay_reason": "reset_topic",
+        "baseline_mode": "split",
+        "replay_mode": "single",
+        "baseline_flags": {
+          "dropped": false,
+          "pending_only": true,
+          "local_only": true,
+          "orphaned": true,
+          "is_new": true,
+          "merged": false
+        },
+        "replay_flags": {
+          "dropped": false,
+          "pending_only": false,
+          "local_only": false,
+          "orphaned": false,
+          "is_new": false,
+          "merged": false
+        },
+        "baseline_context_block_count": 2,
+        "replay_context_block_count": 6,
+        "baseline_retrieved_turns": [],
+        "replay_retrieved_turns": [
+          1,
+          9
+        ]
+      },
+      {
+        "turn": 11,
+        "text": "主播心里本来就有火",
+        "baseline_reason": "orphan_overflow",
+        "replay_reason": "reset_topic",
+        "baseline_mode": "split",
+        "replay_mode": "single",
+        "baseline_flags": {
+          "dropped": false,
+          "pending_only": true,
+          "local_only": true,
+          "orphaned": true,
+          "is_new": true,
+          "merged": false
+        },
+        "replay_flags": {
+          "dropped": false,
+          "pending_only": false,
+          "local_only": false,
+          "orphaned": false,
+          "is_new": false,
+          "merged": false
+        },
+        "baseline_context_block_count": 1,
+        "replay_context_block_count": 5,
+        "baseline_retrieved_turns": [],
+        "replay_retrieved_turns": [
+          1,
+          10
+        ]
+      },
+      {
+        "turn": 12,
+        "text": "鬼鬼发力了",
+        "baseline_reason": "orphan_overflow",
+        "replay_reason": "reset_topic",
+        "baseline_mode": "split",
+        "replay_mode": "single",
+        "baseline_flags": {
+          "dropped": false,
+          "pending_only": true,
+          "local_only": true,
+          "orphaned": true,
+          "is_new": true,
+          "merged": false
+        },
+        "replay_flags": {
+          "dropped": false,
+          "pending_only": false,
+          "local_only": false,
+          "orphaned": false,
+          "is_new": false,
+          "merged": false
+        },
+        "baseline_context_block_count": 1,
+        "replay_context_block_count": 5,
+        "baseline_retrieved_turns": [],
+        "replay_retrieved_turns": [
+          1,
+          11
+        ]
+      },
+      {
+        "turn": 13,
+        "text": "刚红完看到主播也红我就释怀了",
+        "baseline_reason": "orphan_overflow",
+        "replay_reason": "keep_pending_open_threshold",
+        "baseline_mode": "split",
+        "replay_mode": "single",
+        "baseline_flags": {
+          "dropped": false,
+          "pending_only": true,
+          "local_only": true,
+          "orphaned": true,
+          "is_new": true,
+          "merged": false
+        },
+        "replay_flags": {
+          "dropped": false,
+          "pending_only": true,
+          "local_only": true,
+          "orphaned": false,
+          "is_new": false,
+          "merged": false
+        },
+        "baseline_context_block_count": 1,
+        "replay_context_block_count": 3,
+        "baseline_retrieved_turns": [],
+        "replay_retrieved_turns": [
+          12
+        ]
+      }
+    ]
+  }
+}
